@@ -1,6 +1,6 @@
 <?php
 
-require __DIR__.'/../../vendor/autoload.php';
+require __DIR__.'/../../packages/laravel/vendor/autoload.php';
 
 use Illuminate\Container\Container;
 use Illuminate\Database\Capsule\Manager;

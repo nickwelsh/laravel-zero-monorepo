@@ -23,7 +23,7 @@ a Composer path repository pointing to its absolute path and require the dev pac
 ```json
 {
   "repositories": [
-    { "type": "path", "url": "../laravel-zero", "options": { "symlink": true } }
+    { "type": "path", "url": "../laravel-zero/packages/laravel", "options": { "symlink": true } }
   ]
 }
 ```
@@ -37,7 +37,7 @@ Build and pack the npm package from this repository, then install the resulting
 tarball in your app:
 
 ```sh
-composer install
+composer --working-dir=packages/laravel install
 pnpm install --frozen-lockfile
 pnpm build
 pnpm --filter @laravel-zero/client pack --pack-destination /tmp/laravel-zero-pack
@@ -412,22 +412,22 @@ the declared UUID/ULID strategy. Native Zero options configure storage and trans
 ## Development and verification
 
 ```sh
-composer install
+composer --working-dir=packages/laravel install
 pnpm install --frozen-lockfile
-composer test
+composer --working-dir=packages/laravel test
 pnpm test
 pnpm typecheck
 pnpm contracts:check
 pnpm build
 pnpm package:check
-composer format:check
+composer --working-dir=packages/laravel format:check
 pnpm format:check
 ```
 
 The PostgreSQL tests are skipped unless `ZERO_TEST_PG_DATABASE` is set. Create an
 empty disposable database named `laravel_zero_test` (or `laravel_zero_test_*`),
 set optional `ZERO_TEST_PG_HOST`, `PORT`, `USER`, and `PASSWORD`, then run
-`ZERO_TEST_PG_DATABASE=laravel_zero_test composer test`. The harness refuses an
+`ZERO_TEST_PG_DATABASE=laravel_zero_test composer --working-dir=packages/laravel test`. The harness refuses an
 existing application schema and removes only its owned fixtures.
 
 Tests cover metadata/privacy, PHP/native Zero AST equivalence, FormRequests,

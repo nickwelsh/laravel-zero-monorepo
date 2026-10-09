@@ -53,12 +53,12 @@ jobs:
         with:
           node-version: "24"
           cache: pnpm
-      - run: composer validate --strict
-      - run: composer update --with 'laravel/framework:${{ matrix.laravel }}' --with 'orchestra/testbench:${{ matrix.testbench }}' --no-interaction --prefer-dist
+      - run: composer --working-dir=packages/laravel validate --strict
+      - run: composer --working-dir=packages/laravel update --with 'laravel/framework:${{ matrix.laravel }}' --with 'orchestra/testbench:${{ matrix.testbench }}' --no-interaction --prefer-dist
       - run: pnpm install --frozen-lockfile
-      - run: composer format:check
+      - run: composer --working-dir=packages/laravel format:check
       - run: pnpm format:check
-      - run: composer test
+      - run: composer --working-dir=packages/laravel test
       - run: pnpm contracts:check
       - run: pnpm test
       - run: pnpm typecheck
