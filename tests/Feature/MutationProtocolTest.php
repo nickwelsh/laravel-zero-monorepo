@@ -14,6 +14,20 @@ use LaravelZero\ZeroContext;
 
 class MutationProtocolTest extends PostgresTestCase
 {
+    public function test_cancelled_eloquent_events_are_durable_rejections(): void
+    {
+        Task::saving(fn () => false);
+        try {
+            $result = $this->process([$this->mutation(1)]);
+            self::assertSame('app', $result['mutations'][0]['result']['error']);
+            self::assertSame(0, Task::count());
+            self::assertSame(1, (int) DB::table('zero_test_0.clients')->value('lastMutationID'));
+            self::assertSame(1, DB::table('zero_test_0.mutations')->count());
+        } finally {
+            Task::flushEventListeners();
+        }
+    }
+
     private function process(array $mutations, ?array $params = null): array
     {
         $user = (new User)->setKeyType('string');
