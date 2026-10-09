@@ -20,6 +20,13 @@ use LogicException;
 
 class MetadataTest extends TestCase
 {
+    public function test_model_identity_must_match_the_database_primary_key(): void
+    {
+        $this->expectException(LogicException::class);
+        $this->expectExceptionMessage('primary key');
+        new ModelRegistry([WrongKeyTask::class]);
+    }
+
     public function test_date_columns_follow_zeros_numeric_wire_representation(): void
     {
         Schema::create('calendars', function (Blueprint $table) {
@@ -89,6 +96,16 @@ class JsonFilteredTask extends Task
     public static function zero(): ZeroDefinition
     {
         return ZeroDefinition::make()->allowedFilters([AllowedFilter::exact('payload')]);
+    }
+}
+
+class WrongKeyTask extends Task
+{
+    protected $primaryKey = 'title';
+
+    public static function zero(): ZeroDefinition
+    {
+        return ZeroDefinition::make();
     }
 }
 

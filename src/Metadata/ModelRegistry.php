@@ -183,6 +183,11 @@ final class ModelRegistry
         foreach ($required as $field) {
             $this->requireColumn($columns, $name, $field);
         }
+        $indexes = $model->getConnection()->getSchemaBuilder()->getIndexes($model->getTable());
+        $primary = array_values(array_filter($indexes, fn ($index) => $index['primary']))[0]['columns'] ?? [];
+        if ($primary !== [$model->getKeyName()]) {
+            throw new LogicException("{$name}: the model key must match a single-column database primary key.");
+        }
         foreach ($authorization as $rule) {
             if (! in_array($rule['op'], ['=', '!=', '<', '<=', '>', '>=', 'IS', 'IS NOT'], true)) {
                 throw new LogicException("{$name}: unsupported authorization operator.");
