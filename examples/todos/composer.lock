@@ -4,7 +4,7 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "cc7af213892518b14b02eda02d48174e",
+    "content-hash": "b661cf40d1c7ceae85a6a214b90db096",
     "packages": [
         {
             "name": "bacon/bacon-qr-code",
@@ -2879,6 +2879,91 @@
                 "source": "https://github.com/nette/utils/tree/v4.1.5"
             },
             "time": "2026-07-17T23:02:45+00:00"
+        },
+        {
+            "name": "nickwelsh/laravel-zero",
+            "version": "dev-main",
+            "dist": {
+                "type": "path",
+                "url": "../../packages/laravel",
+                "reference": "5947a9d5cabbb5e6b6df781914ff8d98c32116d1"
+            },
+            "require": {
+                "laravel/framework": "^12.0|^13.0",
+                "php": "^8.3"
+            },
+            "require-dev": {
+                "driftingly/rector-laravel": "^2.3",
+                "larastan/larastan": "^3.9",
+                "laravel/pint": "^1.0",
+                "orchestra/testbench": "^10.0|^11.0",
+                "peckphp/peck": "^0.3.0",
+                "pestphp/pest": "^4.0",
+                "pestphp/pest-plugin-laravel": "^4.0",
+                "rector/rector": "^2.4"
+            },
+            "type": "library",
+            "extra": {
+                "laravel": {
+                    "providers": [
+                        "LaravelZero\\ZeroServiceProvider"
+                    ]
+                }
+            },
+            "autoload": {
+                "psr-4": {
+                    "LaravelZero\\": "src/"
+                }
+            },
+            "autoload-dev": {
+                "psr-4": {
+                    "LaravelZero\\Tests\\": "tests/"
+                }
+            },
+            "scripts": {
+                "test": [
+                    "pest"
+                ],
+                "format": [
+                    "pint"
+                ],
+                "format:check": [
+                    "pint --test"
+                ],
+                "test:coverage": [
+                    "pest --coverage --coverage-clover=coverage/clover.xml --coverage-html=coverage/html"
+                ],
+                "analyse": [
+                    "phpstan analyse --memory-limit=1G"
+                ],
+                "lint": [
+                    "@analyse"
+                ],
+                "rector": [
+                    "rector process"
+                ],
+                "rector:check": [
+                    "rector process --dry-run"
+                ],
+                "peck": [
+                    "peck --path=src"
+                ],
+                "check": [
+                    "@format:check",
+                    "@analyse",
+                    "@rector:check",
+                    "@peck",
+                    "@test"
+                ]
+            },
+            "license": [
+                "MIT"
+            ],
+            "description": "Laravel-owned model contracts, queries and CRUD for Rocicorp Zero.",
+            "transport-options": {
+                "symlink": true,
+                "relative": true
+            }
         },
         {
             "name": "nikic/php-parser",
@@ -11404,7 +11489,9 @@
     ],
     "aliases": [],
     "minimum-stability": "stable",
-    "stability-flags": {},
+    "stability-flags": {
+        "nickwelsh/laravel-zero": 20
+    },
     "prefer-stable": true,
     "prefer-lowest": false,
     "platform": {
