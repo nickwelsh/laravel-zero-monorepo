@@ -23,7 +23,7 @@ export type Operation =
   "create" | "update" | "destroy" | "restore" | "force_delete";
 export type ClientContext = Readonly<
   Record<string, string | number | boolean | null>
-> & { readonly user_id: string | null };
+> & { readonly user_id: string | number | null };
 
 export interface ModelContract {
   readonly name: string;
@@ -84,6 +84,10 @@ export type ColumnValue<C extends Column> =
 export type ModelRow<D extends ContractMap, N extends keyof D> = {
   readonly [F in keyof D[N]["columns"]]: ColumnValue<D[N]["columns"][F]>;
 };
+export type RecordId<D extends ContractMap, N extends keyof D> = ColumnValue<
+  D[N]["columns"][D[N]["key"] & keyof D[N]["columns"]]
+> &
+  (string | number);
 export type FilterName<
   D extends ContractMap,
   N extends keyof D,
@@ -97,7 +101,14 @@ export type FilterValue<
   : D[N]["filters"][F]["kind"] extends "partial"
     ? string
     : D[N]["filters"][F]["kind"] extends "belongsTo"
-      ? string
+      ? RecordId<
+          D,
+          RelatedName<
+            D,
+            N,
+            D[N]["filters"][F]["field"] & keyof D[N]["relations"] & string
+          >
+        >
       : D[N]["filters"][F]["field"] extends keyof D[N]["columns"]
         ? ColumnValue<D[N]["columns"][D[N]["filters"][F]["field"]]>
         : never;
@@ -154,7 +165,7 @@ export type CreateInput<D extends ContractMap, N extends keyof D> = {
   id?: string;
 };
 export type UpdateInput<D extends ContractMap, N extends keyof D> = {
-  id: string;
+  id: RecordId<D, N>;
 } & {
   [F in RequiredFields<D, N, "update">]: ColumnValue<D[N]["columns"][F]>;
 } & {
@@ -170,7 +181,7 @@ export type MutationInput<
   ? CreateInput<D, N>
   : O extends "update"
     ? UpdateInput<D, N>
-    : { id: string };
+    : { id: RecordId<D, N> };
 export type IncludeName<
   D extends ContractMap,
   N extends keyof D,
@@ -178,7 +189,7 @@ export type IncludeName<
 export type RelatedName<
   D extends ContractMap,
   N extends keyof D,
-  R extends IncludeName<D, N>,
+  R extends keyof D[N]["relations"] & string,
 > = D[N]["relations"][R]["model"] & keyof D;
 export type RelatedRow<
   D extends ContractMap,

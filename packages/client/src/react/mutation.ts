@@ -10,6 +10,7 @@ import type {
   ContractMap,
   MutationInput,
   Operation,
+  RecordId,
 } from "../contract";
 import { Mutation } from "../mutation";
 import { InputError } from "../validation";
@@ -20,13 +21,14 @@ export type MutationState = {
   error: Error | undefined;
   fields: Readonly<Record<string, readonly string[]>>;
 };
-export type MutationCall = MutatorResult & { readonly id: string };
+export type MutationCall<ID extends string | number = string | number> =
+  MutatorResult & { readonly id: ID };
 export type MutationCallback<
   S extends Schema,
   D extends ContractMap,
   N extends keyof D & string,
   O extends Operation,
-> = ((input: MutationInput<D, N, O>) => MutationCall) & {
+> = ((input: MutationInput<D, N, O>) => MutationCall<RecordId<D, N>>) & {
   readonly state: MutationState;
   readonly form: Mutation<S, D, N, O>["form"];
   reset(): void;
@@ -78,7 +80,9 @@ export function useMutation<
       mounted: true,
     };
   const currentState = snapshot.zero === zero ? snapshot.state : idle;
-  const callback = (input: MutationInput<D, N, O>): MutationCall => {
+  const callback = (
+    input: MutationInput<D, N, O>,
+  ): MutationCall<RecordId<D, N>> => {
     const version = ++active.current.version;
     const update = (next: MutationState) => {
       if (

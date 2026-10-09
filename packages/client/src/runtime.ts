@@ -1,5 +1,5 @@
 import type { Schema } from "@rocicorp/zero";
-import type { ContractMap, ModelRow } from "./contract";
+import type { ContractMap, ModelRow, RecordId } from "./contract";
 import { Selection, createQueries } from "./query";
 import { Mutation, createMutators, type ClientDefaults } from "./mutation";
 
@@ -14,7 +14,7 @@ export type Model<
   query(): {
     [O in D[N]["queries"][number]]: O extends "all"
       ? () => Selection<S, D, N, ModelRow<D, N>, false>
-      : (id: string) => Selection<S, D, N, ModelRow<D, N>, true>;
+      : (id: RecordId<D, N>) => Selection<S, D, N, ModelRow<D, N>, true>;
   };
 } & { [O in D[N]["mutations"][number]]: () => Mutation<S, D, N, O> };
 
@@ -41,7 +41,7 @@ export function createLaravelZero<
           operations[operation] =
             operation === "all"
               ? () => new Selection(schema, definitions, name, queries, false)
-              : (id: string) =>
+              : (id: string | number) =>
                   new Selection(schema, definitions, name, queries, true, {
                     id,
                   });

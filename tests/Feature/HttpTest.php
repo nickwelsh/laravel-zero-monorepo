@@ -3,11 +3,23 @@
 namespace LaravelZero\Tests\Feature;
 
 use Illuminate\Foundation\Auth\User;
+use Illuminate\Http\Request;
+use LaravelZero\Http\ContextResolver;
 use LaravelZero\Tests\TestCase;
 use LaravelZero\ZeroServiceProvider;
 
 class HttpTest extends TestCase
 {
+    public function test_context_preserves_numeric_identifiers_while_protocol_user_id_is_a_string(): void
+    {
+        $user = (new User)->forceFill(['id' => 42]);
+        $request = Request::create('/zero/query', 'POST');
+        $request->setUserResolver(fn () => $user);
+        $context = (new ContextResolver)($request);
+        self::assertSame(42, $context->get('user_id'));
+        self::assertSame('42', $context->userId());
+    }
+
     protected function getPackageProviders($app): array
     {
         return [ZeroServiceProvider::class];

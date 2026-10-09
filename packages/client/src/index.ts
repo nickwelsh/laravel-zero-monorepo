@@ -12,6 +12,7 @@ export type {
   ContractMap,
   ClientContext,
   ModelRow,
+  RecordId,
   Filter,
   FilterName,
   FilterValue,

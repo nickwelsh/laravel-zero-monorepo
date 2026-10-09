@@ -11,6 +11,6 @@ class ContextResolver
     {
         $id = $request->user()?->getAuthIdentifier();
 
-        return new ZeroContext(['user_id' => $id === null ? null : (string) $id]);
+        return new ZeroContext(['user_id' => $id]);
     }
 }

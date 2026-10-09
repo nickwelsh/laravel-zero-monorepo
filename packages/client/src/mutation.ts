@@ -17,6 +17,7 @@ import type {
   ModelContract,
   MutationInput,
   Operation,
+  RecordId,
 } from "./contract";
 import {
   columnValue,
@@ -28,8 +29,8 @@ import {
   validateRules,
 } from "./validation";
 
-export type MutationArgs = {
-  id: string;
+export type MutationArgs<ID extends string | number = string | number> = {
+  id: ID;
   data: { [key: string]: ReadonlyJSONValue };
   now: number;
 };
@@ -42,7 +43,11 @@ export type NativeMutators<
   D extends ContractMap,
 > = AnyMutatorRegistry & {
   [N in keyof D]: {
-    [O in D[N]["mutations"][number]]: Mutator<MutationArgs, S, ClientContext>;
+    [O in D[N]["mutations"][number]]: Mutator<
+      MutationArgs<RecordId<D, N>>,
+      S,
+      ClientContext
+    >;
   };
 };
 
@@ -127,8 +132,8 @@ function validateMutation(
   args: MutationArgs,
 ): void {
   keys(object(args, "args"), ["id", "data", "now"], "args");
-  if (typeof args.id !== "string" || args.id === "")
-    fail("id", "Expected a record id.");
+  columnValue(args.id, model.columns[model.key]!, "id");
+  if (args.id === "") fail("id", "Expected a record id.");
   if (!Number.isInteger(args.now) || Math.abs(args.now) > 8640000000000000)
     fail("now", "Invalid timestamp.");
   const data = object(args.data, "data");
@@ -176,7 +181,7 @@ export class Mutation<
 
   prepare(
     input: MutationInput<D, N, O>,
-  ): MutateRequest<MutationArgs, S, ClientContext> {
+  ): MutateRequest<MutationArgs<RecordId<D, N>>, S, ClientContext> {
     const value = object(input, "input");
     keys(
       value,
@@ -205,15 +210,18 @@ export class Mutation<
             ((kind) => (kind === "uuid" ? uuidv7() : ulid()))
           )(this.contract.idGenerator, this.contract)
         : undefined);
-    const args: MutationArgs = {
-      id: id as string,
+    const args: MutationArgs<RecordId<D, N>> = {
+      id: id as RecordId<D, N>,
       data,
       now: (this.defaults.now ?? (() => new Date()))().getTime(),
     };
     validateMutation(this.contract, this.operation, args);
     const mutator = (
       this.mutators[this.name] as Partial<
-        Record<Operation, Mutator<MutationArgs, S, ClientContext>>
+        Record<
+          Operation,
+          Mutator<MutationArgs<RecordId<D, N>>, S, ClientContext>
+        >
       >
     )[this.operation];
     if (!mutator) fail("mutation", "Mutation is not enabled.");

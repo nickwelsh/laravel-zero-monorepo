@@ -9,6 +9,31 @@ import {
 import { createLaravelZero } from "./index";
 
 describe("generated models", () => {
+  it("accepts numeric record IDs for reads and updates on existing integer-key tables", () => {
+    const runtime = createLaravelZero(schema, {
+      ...definitions,
+      Task: {
+        ...definitions.Task,
+        mutations: ["update"],
+        idGenerator: null,
+        columns: {
+          ...definitions.Task.columns,
+          id: { ...definitions.Task.columns.id, type: "number" },
+        },
+      },
+    } as const);
+    expect(runtime.models.Task.query().one(42).args.id).toBe(42);
+    expect(
+      runtime.models.Task.update().prepare({ id: 42, title: "Updated" }).args
+        .id,
+    ).toBe(42);
+    expect(() =>
+      runtime.models.Task.update().prepare({
+        id: "42",
+        title: "Updated",
+      } as never),
+    ).toThrow(/value/i);
+  });
   it("rejects null substring filters even when the column is nullable", () => {
     const runtime = createLaravelZero(schema, {
       ...definitions,
