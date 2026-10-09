@@ -14,13 +14,7 @@ final class TypeScriptGenerator
         foreach ($models as $model) {
             $tables[$model->table] = ['columns' => $model->columns, 'key' => [$model->key]];
         }
-        foreach ($registry->pivots() as $table => $keys) {
-            $columns = [];
-            foreach ($registry->connection()->getSchemaBuilder()->getColumns($table) as $column) {
-                if (in_array($column['name'], $keys, true)) {
-                    $columns[$column['name']] = ['type' => preg_match('/int|numeric/', $column['type_name']) ? 'number' : 'string', 'nullable' => false];
-                }
-            }
+        foreach ($registry->pivotColumns() as $table => $columns) {
             $tables[$table] = ['columns' => $columns, 'key' => $registry->pivotKeys()[$table]];
         }
         ksort($tables);

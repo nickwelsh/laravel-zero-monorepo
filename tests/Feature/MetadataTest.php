@@ -3,8 +3,13 @@
 namespace LaravelZero\Tests\Feature;
 
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Schema\Blueprint;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Schema;
 use LaravelZero\Attributes\ZeroExclude;
 use LaravelZero\Attributes\ZeroPublic;
+use LaravelZero\Definition\AllowedFilter;
+use LaravelZero\Definition\ZeroDefinition;
 use LaravelZero\Metadata\ModelRegistry;
 use LaravelZero\Tests\Fixtures\Comment;
 use LaravelZero\Tests\Fixtures\Tag;
@@ -15,6 +20,25 @@ use LogicException;
 
 class MetadataTest extends TestCase
 {
+    public function test_date_columns_follow_zeros_numeric_wire_representation(): void
+    {
+        Schema::create('calendars', function (Blueprint $table) {
+            $table->uuid('id')->primary();
+            $table->date('day');
+        });
+        $column = (new ModelRegistry([Calendar::class]))->get('Calendar')->columns['day'];
+        self::assertSame('number', $column['type']);
+        self::assertTrue($column['date']);
+    }
+
+    public function test_json_filters_fail_during_generation(): void
+    {
+        DB::statement('ALTER TABLE tasks ADD COLUMN payload JSON');
+        $this->expectException(LogicException::class);
+        $this->expectExceptionMessage('JSON');
+        new ModelRegistry([JsonFilteredTask::class]);
+    }
+
     public function test_resolves_one_column_plan_and_separate_public_mutation_inputs(): void
     {
         $registry = new ModelRegistry($this->models());
@@ -49,6 +73,22 @@ class MetadataTest extends TestCase
         $task = (new ModelRegistry([ExcludedTask::class]))->get('ExcludedTask');
         self::assertArrayNotHasKey('secret', $task->columns);
         self::assertArrayNotHasKey('completed_at', $task->columns);
+    }
+}
+
+#[ZeroPublic]
+class Calendar extends Model
+{
+    public $timestamps = false;
+
+    protected $casts = ['day' => 'immutable_date'];
+}
+
+class JsonFilteredTask extends Task
+{
+    public static function zero(): ZeroDefinition
+    {
+        return ZeroDefinition::make()->allowedFilters([AllowedFilter::exact('payload')]);
     }
 }
 

@@ -30,6 +30,8 @@ final class ModelRegistry
 
     private array $pivotKeys = [];
 
+    private array $pivotColumns = [];
+
     private ?string $connectionName = null;
 
     public function __construct(array $classes)
@@ -64,6 +66,11 @@ final class ModelRegistry
     public function pivots(): array
     {
         return $this->pivots;
+    }
+
+    public function pivotColumns(): array
+    {
+        return $this->pivotColumns;
     }
 
     public function pivotKeys(): array
@@ -155,20 +162,14 @@ final class ModelRegistry
                 continue;
             }
             $type = strtolower($column['type_name']);
-            $zeroType = match (true) {
-                preg_match('/bool/', $type) === 1 => 'boolean',
-                preg_match('/^(tinyint|smallint|mediumint|int|integer|bigint|int[248]|float|double|real|numeric|decimal|timestamp|datetime)/', $type) === 1 => 'number',
-                preg_match('/json/', $type) === 1 => 'json',
-                preg_match('/^(varchar|char|text|uuid|date|time|bpchar|citext)/', $type) === 1 => 'string',
-                default => throw new LogicException("{$name}.{$field}: unsupported database type {$type}."),
-            };
+            $zeroType = $this->databaseType($type, "{$name}.{$field}");
             $cast = $casts[$field] ?? '';
-            if ($cast === 'boolean' || $cast === 'bool') {
+            if ($model->getConnection()->getDriverName() === 'sqlite' && in_array($cast, ['boolean', 'bool'], true)) {
                 $zeroType = 'boolean';
             }
-            $date = in_array($field, array_filter([$created, $updated, $deleted]), true) || in_array(explode(':', $cast)[0], ['date', 'datetime', 'immutable_date', 'immutable_datetime'], true);
-            if ($date && $zeroType !== 'number') {
-                throw new LogicException("{$name}.{$field}: Date casts require a timestamp column (Zero epoch milliseconds).");
+            $date = in_array($type, ['date', 'datetime', 'timestamp', 'timestamptz'], true) || in_array(explode(':', $cast)[0], ['date', 'datetime', 'immutable_date', 'immutable_datetime'], true);
+            if ($date && ! preg_match('/^(date|datetime|timestamp|timestamptz)$/D', $type)) {
+                throw new LogicException("{$name}.{$field}: Date casts require a date or timestamp column (Zero epoch milliseconds).");
             }
             $enum = enum_exists($cast) && is_subclass_of($cast, BackedEnum::class) ? array_map(fn ($case) => $case->value, $cast::cases()) : null;
             $default = $this->literalDefault($column['default'], $zeroType);
@@ -202,6 +203,9 @@ final class ModelRegistry
         foreach ($definition->filters as $filter) {
             if (in_array($filter['kind'], ['exact', 'partial'], true)) {
                 $this->requireColumn($columns, $name, $filter['field']);
+                if ($columns[$filter['field']]['type'] === 'json') {
+                    throw new LogicException("{$name}: JSON filters are not supported by Zero.");
+                }
                 if ($filter['kind'] === 'partial' && $columns[$filter['field']]['type'] !== 'string') {
                     throw new LogicException("{$name}: partial filters require a string field.");
                 }
@@ -212,6 +216,9 @@ final class ModelRegistry
         }
         foreach (array_merge($definition->sorts, array_column($definition->defaultOrder, 0)) as $field) {
             $this->requireColumn($columns, $name, $field);
+            if ($columns[$field]['type'] === 'json') {
+                throw new LogicException("{$name}: JSON sorting is not supported by Zero.");
+            }
         }
 
         [$validation, $diagnostics] = (new RuleExtractor)->extract($definition->requests, $writable, $columns, $mutations);
@@ -255,8 +262,16 @@ final class ModelRegistry
                 if ($primary === null) {
                     throw new LogicException("{$metadata->name}.{$name}: the pivot table needs a primary key for Zero.");
                 }
+                if (! preg_match('/^[A-Za-z_][A-Za-z0-9_]*$/D', $pivot) || in_array($pivot, array_column($this->models, 'table'), true)) {
+                    throw new LogicException("{$metadata->name}.{$name}: pivots require an unqualified table that is not also a registered model.");
+                }
                 $this->pivotKeys[$pivot] = $primary;
                 $this->pivots[$pivot] = array_values(array_unique(array_merge($this->pivots[$pivot] ?? [], $keys, $primary)));
+                $dbColumns = array_column($model->getConnection()->getSchemaBuilder()->getColumns($pivot), null, 'name');
+                foreach ($this->pivots[$pivot] as $field) {
+                    $column = $dbColumns[$field] ?? throw new LogicException("{$pivot}: missing required pivot column {$field}.");
+                    $this->pivotColumns[$pivot][$field] = ['type' => $this->databaseType($column['type_name'], "{$pivot}.{$field}"), 'nullable' => $column['nullable']];
+                }
                 $path = [
                     ['source' => [$relation->getParentKeyName()], 'dest' => [$keys[0]], 'table' => $pivot],
                     ['source' => [$keys[1]], 'dest' => [$relation->getRelatedKeyName()], 'table' => $target->table],
@@ -285,6 +300,17 @@ final class ModelRegistry
         if (! isset($columns[$field])) {
             throw new LogicException("{$name}: required column {$field} is missing or excluded.");
         }
+    }
+
+    private function databaseType(string $type, string $path): string
+    {
+        return match (strtolower($type)) {
+            'bool', 'boolean' => 'boolean',
+            'tinyint', 'smallint', 'mediumint', 'int', 'integer', 'bigint', 'int2', 'int4', 'int8', 'float', 'float4', 'float8', 'double', 'double precision', 'real', 'numeric', 'decimal', 'date', 'timestamp', 'timestamptz', 'datetime' => 'number',
+            'json', 'jsonb' => 'json',
+            'varchar', 'char', 'text', 'uuid', 'bpchar', 'character varying', 'character' => 'string',
+            default => throw new LogicException("{$path}: unsupported database type {$type}."),
+        };
     }
 
     private function literalDefault(mixed $default, string $type): array
