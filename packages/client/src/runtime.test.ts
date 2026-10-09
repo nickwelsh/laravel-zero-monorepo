@@ -9,6 +9,30 @@ import {
 import { createLaravelZero } from "./index";
 
 describe("generated models", () => {
+  it("validates portable FormRequest rules before enqueueing", () => {
+    const runtime = createLaravelZero(schema, {
+      ...definitions,
+      Task: {
+        ...definitions.Task,
+        validation: {
+          create: {
+            title: ["required", "max:3"],
+            done: ["required", "boolean"],
+          },
+        },
+      },
+    } as const);
+    expect(() =>
+      runtime.models.Task.create().prepare({ title: "long", done: false }),
+    ).toThrow(/max:3/);
+    expect(() =>
+      runtime.models.Task.create().prepare({ title: "ok" } as never),
+    ).toThrow(/required/);
+    expect(
+      runtime.models.Task.create().prepare({ title: "ok", done: false }).args
+        .data.done,
+    ).toBe(false);
+  });
   it("builds immutable query arguments and uses native named queries", () => {
     const base = Task.query().all();
     const refined = base

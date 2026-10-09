@@ -5,3 +5,4 @@ composer.lock
 pnpm-lock.yaml
 *.php
 phpunit.xml
+tests/interop/generated.ts

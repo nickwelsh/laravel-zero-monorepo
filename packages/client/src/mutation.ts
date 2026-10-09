@@ -25,6 +25,7 @@ import {
   freeze,
   keys,
   object,
+  validateRules,
 } from "./validation";
 
 export type MutationArgs = {
@@ -144,6 +145,7 @@ function validateMutation(
       if (!(field in data) && !column.nullable && !column.hasDefault)
         fail(field, "This field is required.");
     }
+  validateRules(model, operation, { ...data, id: args.id });
 }
 
 export class Mutation<

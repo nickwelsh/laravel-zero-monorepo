@@ -6,6 +6,7 @@ import type {
   QueryArgs,
   IncludeArgs,
   ClientContext,
+  Operation,
 } from "./contract";
 
 export class InputError extends Error {
@@ -194,4 +195,73 @@ export function freeze<T>(value: T): T {
     Object.freeze(value);
   }
   return value;
+}
+
+export function validateRules(
+  model: ModelContract,
+  operation: Operation,
+  data: Record<string, unknown>,
+): void {
+  for (const [field, rules] of Object.entries(
+    model.validation[operation] ?? {},
+  )) {
+    const value = data[field];
+    if (value === undefined && rules.includes("sometimes")) continue;
+    const empty =
+      value === undefined ||
+      value === null ||
+      (typeof value === "string" && value.trim() === "") ||
+      (Array.isArray(value) && value.length === 0);
+    if (rules.includes("required") && empty)
+      fail(field, "This field is required.");
+    if (
+      value === undefined ||
+      (value === null && rules.includes("nullable")) ||
+      value === ""
+    )
+      continue;
+    for (const rule of rules) {
+      const [kind, ...parameters] = rule.split(":");
+      const parameter = parameters.join(":");
+      const numeric =
+        model.columns[field]?.type === "number" ||
+        rules.includes("numeric") ||
+        rules.includes("integer");
+      const size = numeric
+        ? Number(value)
+        : typeof value === "string"
+          ? Array.from(value).length
+          : Array.isArray(value)
+            ? value.length
+            : NaN;
+      const valid =
+        kind === "min"
+          ? size >= Number(parameter)
+          : kind === "max"
+            ? size <= Number(parameter)
+            : kind === "in"
+              ? parameter.split(",").includes(String(value))
+              : kind === "string"
+                ? typeof value === "string"
+                : kind === "boolean"
+                  ? typeof value === "boolean"
+                  : kind === "integer"
+                    ? typeof value === "number" && Number.isInteger(value)
+                    : kind === "numeric"
+                      ? (typeof value === "number" ||
+                          typeof value === "string") &&
+                        value !== "" &&
+                        Number.isFinite(Number(value))
+                      : kind === "uuid"
+                        ? typeof value === "string" &&
+                          /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(
+                            value,
+                          )
+                        : kind === "ulid"
+                          ? typeof value === "string" &&
+                            /^[0-7][0-9A-HJKMNP-TV-Z]{25}$/i.test(value)
+                          : true;
+      if (!valid) fail(field, `Failed ${rule} validation.`);
+    }
+  }
 }

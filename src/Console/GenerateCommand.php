@@ -17,6 +17,11 @@ final class GenerateCommand extends Command
     {
         $path = $this->option('output') ?: config('zero.output');
         $source = $generator->generate($registry);
+        foreach ($registry->all() as $model) {
+            foreach ($model->diagnostics as $diagnostic) {
+                $this->warn($diagnostic);
+            }
+        }
         if ($this->option('check')) {
             if (! $files->exists($path) || $files->get($path) !== $source) {
                 $this->error('Zero contracts are out of date. Run zero:generate.');

@@ -2,7 +2,6 @@
 
 namespace LaravelZero\Mutation;
 
-use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Contracts\Auth\Authenticatable;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Foundation\Http\FormRequest;
@@ -62,7 +61,7 @@ final readonly class CrudExecutor
         };
         Gate::forUser($user)->authorize($ability, $operation === 'create' ? $metadata->class : $model);
         if (isset($metadata->definition->requests[$operation])) {
-            $data = $this->formRequest($metadata->definition->requests[$operation], $data, $args['id'], $model, $user);
+            $data = $this->formRequest($metadata, $metadata->definition->requests[$operation], $data, $args['id'], $model, $user);
             $this->validateData($metadata, $operation, $data);
         }
         foreach ($data as $field => $value) {
@@ -75,20 +74,16 @@ final readonly class CrudExecutor
                 $data[$field] = Input::value($context->get($source), $metadata->columns[$field], $field);
             }
             $model->forceFill([$metadata->key => $args['id']]);
-        } else {
-            // Ownership fields are immutable, even if a FormRequest normalizes input.
-            foreach ($metadata->serverFill as $field => $source) {
-                if ($model->getRawOriginal($field) != $context->get($source)) {
-                    throw new AuthorizationException('The record is outside the current ownership context.');
-                }
-            }
         }
-        match ($operation) {
+        $saved = match ($operation) {
             'create', 'update' => $model->forceFill($data)->saveOrFail(),
             'destroy' => $model->deleteOrFail(),
             'restore' => $model->restore(),
             'force_delete' => $model->forceDelete(),
         };
+        if ($saved === false) {
+            Input::fail('model', 'An Eloquent event cancelled this mutation.');
+        }
     }
 
     private function validateData(ModelMetadata $model, string $operation, array $data): void
@@ -107,13 +102,18 @@ final readonly class CrudExecutor
         }
     }
 
-    private function formRequest(string $class, array $data, mixed $id, Model $model, ?Authenticatable $user): array
+    private function formRequest(ModelMetadata $metadata, string $class, array $data, mixed $id, Model $model, ?Authenticatable $user): array
     {
         if (! is_subclass_of($class, FormRequest::class)) {
             throw new LogicException("{$class} must be a FormRequest.");
         }
         $request = FormRequest::createFrom(app('request'), new $class);
         $request->setContainer(app())->setRedirector(app('redirect'));
+        foreach ($data as $field => $value) {
+            if ($metadata->columns[$field]['date'] && $value !== null) {
+                $data[$field] = Carbon::createFromTimestampMs($value, 'UTC')->toISOString();
+            }
+        }
         $request->replace($data + ['id' => $id]);
         $request->setUserResolver(fn () => $user);
         $outerRoute = app('request')->route();
@@ -128,6 +128,15 @@ final readonly class CrudExecutor
             Input::fail('id', 'The mutation identity cannot be normalized.');
         }
         unset($data['id']);
+        foreach ($data as $field => $value) {
+            if (($metadata->columns[$field]['date'] ?? false) && $value !== null) {
+                try {
+                    $data[$field] = Carbon::parse($value, 'UTC')->getTimestampMs();
+                } catch (\InvalidArgumentException) {
+                    Input::fail($field, 'Invalid normalized date.');
+                }
+            }
+        }
 
         return $data;
     }

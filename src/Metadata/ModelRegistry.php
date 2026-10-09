@@ -16,6 +16,7 @@ use Illuminate\Database\Eloquent\SoftDeletes;
 use LaravelZero\Attributes;
 use LaravelZero\ContextField;
 use LaravelZero\Definition\ZeroDefinition;
+use LaravelZero\Generation\RuleExtractor;
 use LogicException;
 use ReflectionClass;
 use ReflectionMethod;
@@ -206,7 +207,9 @@ final class ModelRegistry
             $this->requireColumn($columns, $name, $field);
         }
 
-        return new ModelMetadata($class, $name, $model->getTable(), $model->getKeyName(), $columns, $queries, $mutations, $authorization, $fills, $writable, $generator, $created, $updated, $deleted, $definition);
+        [$validation, $diagnostics] = (new RuleExtractor)->extract($definition->requests, $writable, $columns, $mutations);
+
+        return new ModelMetadata($class, $name, $model->getTable(), $model->getKeyName(), $columns, $queries, $mutations, $authorization, $fills, $writable, $generator, $created, $updated, $deleted, $definition, $validation, $diagnostics);
     }
 
     private function describeRelations(ModelMetadata $metadata): void

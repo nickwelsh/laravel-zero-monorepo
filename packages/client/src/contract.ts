@@ -32,6 +32,9 @@ export interface ModelContract {
   readonly columns: Readonly<Record<string, Column>>;
   readonly queries: readonly ("all" | "one")[];
   readonly mutations: readonly Operation[];
+  readonly validation: Partial<
+    Readonly<Record<Operation, Readonly<Record<string, readonly string[]>>>>
+  >;
   readonly authorization: readonly {
     readonly field: string;
     readonly op: string;
@@ -109,12 +112,37 @@ type Writable<
   D extends ContractMap,
   N extends keyof D,
 > = D[N]["writable"][number] & keyof D[N]["columns"];
+type Rules<
+  D extends ContractMap,
+  N extends keyof D,
+  O extends Operation,
+  F extends PropertyKey,
+> = O extends keyof D[N]["validation"]
+  ? F extends keyof D[N]["validation"][O]
+    ? D[N]["validation"][O][F]
+    : readonly []
+  : readonly [];
+type RequiredFields<
+  D extends ContractMap,
+  N extends keyof D,
+  O extends Operation,
+> = {
+  [F in Writable<D, N>]: Rules<D, N, O, F> extends readonly string[]
+    ? "required" extends Rules<D, N, O, F>[number]
+      ? "sometimes" extends Rules<D, N, O, F>[number]
+        ? never
+        : F
+      : never
+    : never;
+}[Writable<D, N>];
 type OptionalCreate<D extends ContractMap, N extends keyof D> = {
-  [F in Writable<D, N>]: D[N]["columns"][F]["nullable"] extends true
-    ? F
-    : D[N]["columns"][F]["hasDefault"] extends true
+  [F in Writable<D, N>]: F extends RequiredFields<D, N, "create">
+    ? never
+    : D[N]["columns"][F]["nullable"] extends true
       ? F
-      : never;
+      : D[N]["columns"][F]["hasDefault"] extends true
+        ? F
+        : never;
 }[Writable<D, N>];
 export type CreateInput<D extends ContractMap, N extends keyof D> = {
   [F in Exclude<Writable<D, N>, OptionalCreate<D, N>>]: ColumnValue<
@@ -125,7 +153,13 @@ export type CreateInput<D extends ContractMap, N extends keyof D> = {
 };
 export type UpdateInput<D extends ContractMap, N extends keyof D> = {
   id: string;
-} & { [F in Writable<D, N>]?: ColumnValue<D[N]["columns"][F]> };
+} & {
+  [F in RequiredFields<D, N, "update">]: ColumnValue<D[N]["columns"][F]>;
+} & {
+  [F in Exclude<Writable<D, N>, RequiredFields<D, N, "update">>]?: ColumnValue<
+    D[N]["columns"][F]
+  >;
+};
 export type MutationInput<
   D extends ContractMap,
   N extends keyof D,

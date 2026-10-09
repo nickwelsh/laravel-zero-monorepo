@@ -24,6 +24,8 @@ final class ModelMetadata
         public readonly ?string $updatedAt,
         public readonly ?string $deletedAt,
         public readonly ZeroDefinition $definition,
+        public readonly array $validation = [],
+        public readonly array $diagnostics = [],
     ) {}
 
     public function toArray(): array
@@ -32,6 +34,7 @@ final class ModelMetadata
             'name' => $this->name, 'table' => $this->table, 'key' => $this->key,
             'columns' => $this->columns, 'queries' => $this->queries,
             'mutations' => $this->mutations, 'authorization' => $this->authorization,
+            'validation' => (object) array_map(fn ($rules) => (object) $rules, $this->validation),
             'serverFill' => (object) $this->serverFill, 'writable' => $this->writable,
             'idGenerator' => $this->idGenerator,
             'timestamps' => ['created' => $this->createdAt, 'updated' => $this->updatedAt, 'deleted' => $this->deletedAt],
