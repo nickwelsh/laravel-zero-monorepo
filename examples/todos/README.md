@@ -63,13 +63,15 @@ php artisan migrate
 php artisan zero:generate
 php artisan zero:sync-publication
 pnpm build
-pnpm zero:dev
+composer dev
 ```
 
-Leave the last command running. Herd serves Laravel; no `artisan serve` is needed.
-For frontend development, run `pnpm dev` in another terminal. After changing model
-contracts, regenerate and rebuild; after changing replicated columns, sync the
-publication too.
+Leave `composer dev` running. It invokes `php artisan dev` and starts Vite, Zero,
+the queue listener, and Pail together. Herd serves Laravel over HTTPS, so the default
+Artisan HTTP server is excluded. Stop the command with Ctrl+C to stop its processes.
+No separate frontend or cache terminal is needed. After changing model contracts,
+regenerate; after changing replicated columns, sync the publication too.
+`pnpm zero:dev` remains available for running the cache on its own.
 
 The cache script trusts Herd's local CA with `NODE_EXTRA_CA_CERTS`. Override
 `ZERO_HERD_CA` if your CA lives elsewhere. It never disables TLS verification.

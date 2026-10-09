@@ -3,6 +3,7 @@
 namespace App\Providers;
 
 use Carbon\CarbonImmutable;
+use Illuminate\Foundation\DevCommands;
 use Illuminate\Support\Facades\Date;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\ServiceProvider;
@@ -24,6 +25,11 @@ class AppServiceProvider extends ServiceProvider
     public function boot(): void
     {
         $this->configureDefaults();
+
+        // Herd serves the application over HTTPS; Artisan manages its workers.
+        DevCommands::except('server');
+        DevCommands::register('pnpm run dev', 'vite');
+        DevCommands::register('pnpm run zero:dev', 'zero');
     }
 
     /**
