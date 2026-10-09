@@ -9,6 +9,20 @@ use LaravelZero\Tests\PostgresTestCase;
 
 class PublicationTest extends PostgresTestCase
 {
+    public function test_refuses_models_resolved_through_another_postgres_schema(): void
+    {
+        DB::statement('CREATE SCHEMA tenant');
+        DB::statement('SET search_path TO tenant, public');
+        try {
+            $this->expectException(\LogicException::class);
+            $this->expectExceptionMessage('public');
+            new ModelRegistry($this->models());
+        } finally {
+            DB::statement('SET search_path TO public');
+            DB::statement('DROP SCHEMA tenant');
+        }
+    }
+
     public function test_publication_matches_the_generated_column_plan_and_sync_is_idempotent(): void
     {
         $manager = new PublicationManager(new ModelRegistry($this->models()));

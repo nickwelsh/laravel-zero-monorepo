@@ -110,6 +110,9 @@ final class ModelRegistry
             throw new LogicException("{$name}: Zero tables must use unqualified identifiers.");
         }
         $connection = $model->getConnection()->getName();
+        if ($model->getConnection()->getTablePrefix() !== '' || ($this->connectionName === null && $model->getConnection()->getDriverName() === 'pgsql' && $model->getConnection()->selectOne('SELECT current_schema() AS name')->name !== 'public')) {
+            throw new LogicException('Zero models require unprefixed tables in the public PostgreSQL schema.');
+        }
         if ($this->connectionName !== null && $this->connectionName !== $connection) {
             throw new LogicException('Zero models must share one upstream connection.');
         }
