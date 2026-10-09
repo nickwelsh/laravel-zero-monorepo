@@ -1,8 +1,8 @@
 packages:
   - packages/*
 minimumReleaseAgeExclude:
-  - '@rocicorp/zero@1.10.0'
+  - "@rocicorp/zero@1.10.0"
 allowBuilds:
   esbuild: true
-  '@rocicorp/zero-sqlite3': true
+  "@rocicorp/zero-sqlite3": true
   protobufjs: false
