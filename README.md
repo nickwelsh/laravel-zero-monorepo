@@ -404,14 +404,10 @@ the declared UUID/ULID strategy. Native Zero options configure storage and trans
 ```sh
 composer --working-dir=packages/laravel install
 pnpm install --frozen-lockfile
-composer --working-dir=packages/laravel test
-pnpm test
-pnpm typecheck
-pnpm contracts:check
-pnpm build
-pnpm package:check
-composer --working-dir=packages/laravel format:check
-pnpm format:check
+pnpm check
+# Optional coverage reports:
+pnpm test:coverage
+XDEBUG_MODE=coverage pnpm php:test:coverage
 ```
 
 The PostgreSQL tests are skipped unless `ZERO_TEST_PG_DATABASE` is set. Create an
@@ -427,3 +423,6 @@ Laravel 12/13 and PHP 8.3/8.5. A live cache deployment is still a separate end-t
 verification step. See [architecture](docs/architecture.md) for the core invariants.
 
 MIT licensed.
+
+See [tooling](docs/tooling.md) for workspace commands, supported runtimes, and the
+settings adapted or omitted from the Laravel application reference.

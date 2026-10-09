@@ -6,3 +6,8 @@ allowBuilds:
   esbuild: true
   '@rocicorp/zero-sqlite3': true
   protobufjs: false
+# Vite+ wraps Vite with its own version while providing the Vite API Vitest expects.
+peerDependencyRules:
+  allowedVersions:
+    '@vitest/mocker>vite': '0.3.3'
+    'vitest>vite': '0.3.3'
