@@ -218,6 +218,26 @@ php artisan zero:sync-publication --dry-run
 php artisan zero:sync-publication
 ```
 
+To synchronize automatically after successful PostgreSQL migration batches, set
+`zero.sync_publication_on_migrate` to `true` in `config/zero.php`. This is enabled
+in the todos example and opt-in for the library, since the migration role must
+have publication privileges. The hook runs after `up` migrations, including the
+batch inside `migrate:fresh` and `migrate:refresh`; it skips rollbacks, pretend runs,
+and non-PostgreSQL connections. It rebuilds metadata after schema changes and
+keeps the same dedicated publication and column privacy rules. Publication errors
+fail the migration command instead of silently leaving replication incomplete.
+The manual command remains available for deployments that manage publication
+changes separately or need to repair an existing publication without new migrations.
+
+Ordinary migrations do not require deleting Zero's replica. Zero replicates schema
+changes through PostgreSQL event triggers; providers without event triggers need
+[Zero's schema-change hooks](https://zero.rocicorp.dev/docs/connecting-to-postgres)
+or its automatic reset behavior. A full upstream database reset is different:
+stop the cache, clear its SQLite replica files, and restart it, as described in
+[Zero's development guidance](https://zero.rocicorp.dev/llms.txt) and
+[replication troubleshooting](https://zero.rocicorp.dev/docs/debug/replication).
+Do not delete replica files during every migration or while the cache is running.
+
 Generation writes `resources/js/zero/generated.ts`. Use `--output=/path/file.ts`
 to override it, and `--check` in app CI to detect drift. Exclude the generated
 file from formatters so `--check` can compare its exact contents.
