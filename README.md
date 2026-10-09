@@ -1,0 +1,439 @@
+# Laravel Zero
+
+Laravel-owned model contracts, automatic queries, and optimistic CRUD for
+[Rocicorp Zero](https://zero.rocicorp.dev). Declare the allowed interface in PHP,
+generate a native Zero schema and typed TypeScript models, and subscribe from React.
+Laravel authenticates reads and authorizes writes; Zero owns replication, local
+subscriptions, optimistic replay, and reconciliation.
+
+This monorepo contains `nickwelsh/laravel-zero` at the root and
+`@laravel-zero/client` in `packages/client`. The client has a framework-independent
+core and a separate `/react` export. Both target **Zero 1.10.0**.
+
+## Requirements and local installation
+
+- PHP 8.3+, Laravel 12 or 13, and the PDO PostgreSQL extension.
+- PostgreSQL 15+ with logical replication configured for Zero.
+- Zero cache 1.10.0, the matching npm client, and React 18 or 19 for React bindings.
+- Node 24+ and pnpm 11 for developing this monorepo.
+
+The packages have not been published. To use this checkout in a Laravel app, add
+a Composer path repository pointing to its absolute path and require the dev package:
+
+```json
+{
+  "repositories": [
+    { "type": "path", "url": "../laravel-zero", "options": { "symlink": true } }
+  ]
+}
+```
+
+```sh
+composer require nickwelsh/laravel-zero:@dev
+php artisan vendor:publish --tag=zero-config
+```
+
+Build and pack the npm package from this repository, then install the resulting
+tarball in your app:
+
+```sh
+composer install
+pnpm install --frozen-lockfile
+pnpm build
+pnpm --filter @laravel-zero/client pack --pack-destination /tmp/laravel-zero-pack
+```
+
+```sh
+# From your Laravel app:
+pnpm add /tmp/laravel-zero-pack/laravel-zero-client-0.1.0.tgz @rocicorp/zero@1.10.0
+```
+
+Laravel discovers the service provider automatically. The default model discovery
+scans annotated classes under `app/Models`. Alternatively, list every participating
+model in `config/zero.php`, including relationship targets:
+
+```php
+'models' => [App\Models\Task::class, App\Models\TaskList::class],
+```
+
+## Define a model
+
+Use a UUID or ULID primary key for optimistic creates. This example assumes a
+`tasks` table with a UUID `id`, `user_id`, nullable UUID `list_id`, `title`, a
+boolean `done` defaulting to false, nullable `completed_at`, timestamps, and soft
+deletes. Match `user_id` to the authenticated user's actual key type.
+
+```php
+namespace App\Models;
+
+use Illuminate\Database\Eloquent\Concerns\HasUuids;
+use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\SoftDeletes;
+use LaravelZero\Attributes\{ZeroAuthorize, ZeroMutate, ZeroQuery, ZeroServerFill};
+use LaravelZero\ContextField;
+use LaravelZero\Definition\{AllowedFilter, ZeroDefinition};
+
+#[ZeroQuery(['all', 'one'])]
+#[ZeroMutate(['create', 'update', 'destroy', 'restore', 'force_delete'])]
+#[ZeroAuthorize('user_id', '=', ContextField::UserId)]
+#[ZeroServerFill('user_id', ContextField::UserId)]
+class Task extends Model
+{
+    use HasUuids, SoftDeletes;
+
+    protected $fillable = ['user_id', 'list_id', 'title', 'done', 'completed_at'];
+
+    protected function casts(): array
+    {
+        return ['done' => 'boolean', 'completed_at' => 'immutable_datetime'];
+    }
+
+    public static function zero(): ZeroDefinition
+    {
+        return ZeroDefinition::make()
+            ->allowedFilters([
+                'title', // String shorthand means escaped substring matching.
+                AllowedFilter::exact('done'),
+                AllowedFilter::exact('completed_at'),
+                AllowedFilter::belongsTo('list'),
+                AllowedFilter::trashed(),
+            ])
+            ->allowedIncludes(['list'])
+            ->allowedSorts(['title', 'created_at'])
+            ->defaultSort('-created_at')
+            ->limits(default: 50, max: 1000);
+    }
+
+    public function list(): BelongsTo
+    {
+        return $this->belongsTo(TaskList::class, 'list_id');
+    }
+}
+```
+
+The related model declares its own read visibility. It can participate in an
+include without exposing top-level queries or mutations:
+
+```php
+namespace App\Models;
+
+use Illuminate\Database\Eloquent\Model;
+use LaravelZero\Attributes\ZeroAuthorize;
+use LaravelZero\ContextField;
+
+#[ZeroAuthorize('user_id', '=', ContextField::UserId)]
+class TaskList extends Model
+{
+    protected $table = 'lists';
+    public $timestamps = false;
+}
+```
+
+Use `#[ZeroPublic]` to explicitly allow public reads. Multiple `ZeroAuthorize`
+attributes combine with AND. Authorization applies to roots, included rows, nested
+includes, and relationship filters. Missing trusted context denies access.
+`ContextField::TenantId` is also supported; supply it from a custom server context
+resolver after verifying tenant membership. Configure that resolver with
+`zero.context_resolver`. The browser context supplies local query values and
+optimistic fills; Laravel independently resolves authoritative context.
+
+## Policies and validation
+
+Queries and mutations are individually opt-in. Writes require allowing Laravel
+policies or gates: `create`, `update`, `delete`, `restore`, and `forceDelete`.
+For example:
+
+```php
+namespace App\Policies;
+
+use App\Models\{Task, User};
+
+class TaskPolicy
+{
+    public function create(User $user): bool { return true; }
+    public function update(User $user, Task $task): bool
+    {
+        return $task->user_id === $user->getAuthIdentifier();
+    }
+    public function delete(User $user, Task $task): bool { return $this->update($user, $task); }
+    public function restore(User $user, Task $task): bool { return $this->update($user, $task); }
+    public function forceDelete(User $user, Task $task): bool { return $this->update($user, $task); }
+}
+```
+
+Use Laravel's policy discovery or explicitly register the policy with
+`Gate::policy(Task::class, TaskPolicy::class)`. Validate foreign keys and the user's
+permission to associate those records in your FormRequest; read visibility alone
+does not authorize writing relationship IDs.
+
+Map FormRequests in the definition:
+
+```php
+->mutationRequests([
+    'create' => \App\Http\Requests\StoreTask::class,
+    'update' => \App\Http\Requests\UpdateTask::class,
+])
+```
+
+Rules must be extractable without runtime request data. Common portable rules
+(`required`, `nullable`, `sometimes`, scalar types, `min`, `max`, `in`, date casts,
+`uuid`, and `ulid`) become client validators; required rules also refine input
+types. Database rules, rule objects, and unsupported rules remain server-only,
+with generation diagnostics. Laravel runs the complete FormRequest lifecycle,
+including authorization, normalization, and validation hooks. The request sees
+the operation's fields and `id`, its authenticated user, and `route('model')` on
+the HTTP endpoint. Dates arrive as ISO strings for Laravel validation.
+
+Create inputs require nonnullable writable fields without literal database
+defaults. Updates are patches. Repeated `ZeroServerFill` attributes fill fields
+on create from trusted context and remove them from caller-writable inputs.
+Primary keys, server fills, and lifecycle timestamps cannot be patched.
+Writes use Eloquent events and authoritative server timestamps; cancelled events
+and validation/policy failures become durable application errors.
+
+## Generate contracts and restrict replication
+
+Run these against the same migrated PostgreSQL database used by Zero:
+
+```sh
+php artisan zero:generate
+php artisan zero:sync-publication --dry-run
+php artisan zero:sync-publication
+```
+
+Generation writes `resources/js/zero/generated.ts`. Use `--output=/path/file.ts`
+to override it, and `--check` in app CI to detect drift. Exclude the generated
+file from formatters so `--check` can compare its exact contents.
+
+The same column plan drives TypeScript and the dedicated PostgreSQL publication.
+Eloquent `$hidden` and `#[ZeroExclude(['secret'])]` are additive exclusions.
+`#[ZeroColumns([...])]` supplies an allowlist. `#[ZeroIncludeColumns([...])]`
+explicitly opts an otherwise hidden/excluded column back in. Required excluded
+keys, ownership fields, timestamps, or relationship keys cause generation to fail.
+Pivot tables publish only correlation and primary-key columns. Use a dedicated
+publication; synchronization replaces its table/column membership atomically.
+
+Start the cache with the explicit publication. Omitting it lets native Zero
+create a broad default publication. In the cache's environment:
+
+```dotenv
+ZERO_APP_ID=zero
+ZERO_APP_PUBLICATIONS=laravel_zero
+ZERO_UPSTREAM_DB=postgres://user:password@localhost:5432/app
+ZERO_CVR_DB=postgres://user:password@localhost:5432/zero_cvr
+ZERO_CHANGE_DB=postgres://user:password@localhost:5432/zero_changes
+ZERO_QUERY_URL=http://localhost:8000/zero/query
+ZERO_MUTATE_URL=http://localhost:8000/zero/mutate
+ZERO_QUERY_API_KEY=your-generated-private-secret
+ZERO_MUTATE_API_KEY=your-generated-private-secret
+```
+
+Create the named databases, configure PostgreSQL logical replication and the
+required replication privileges, then run the pinned `zero-cache` binary. See
+[Zero cache configuration](https://zero.rocicorp.dev/docs/zero-cache-config) for
+deployment, replication slots, persistent cache storage, and origins.
+This package does not provision or deploy the cache.
+
+In Laravel's environment, use the same app identity and secret:
+
+```dotenv
+ZERO_APP_ID=zero
+ZERO_UPSTREAM_SCHEMA=zero_0
+ZERO_PUBLICATION=laravel_zero
+ZERO_API_KEY=your-generated-private-secret
+```
+
+`ZERO_UPSTREAM_SCHEMA` is a Laravel setting and must match the cache's shard schema
+(`<app-id>_0`). Zero creates its own `clients` and `mutations` bookkeeping tables;
+do not migrate competing tables. Keep the cache API key out of browser code.
+It authenticates the cache, while the configured Laravel middleware separately
+authenticates the end user.
+
+For Laravel session authentication, set `zero.middleware` to `['web', 'auth']`,
+exclude only `zero/query` and `zero/mutate` from Laravel CSRF validation in
+`bootstrap/app.php`, and set both `ZERO_QUERY_FORWARD_COOKIES=true` and
+`ZERO_MUTATE_FORWARD_COOKIES=true` in the cache. Serve the app and cache through a
+cookie-compatible origin/proxy. The endpoints still require the private cache
+API key and the authenticated session. For token authentication, configure your
+API guard and use Zero's `auth` token or allowed client authorization headers.
+The default middleware is `['api', 'auth']`; choose the guard/session setup for
+your application. Keep Zero's periodic auth revalidation and query retransformation
+enabled so server context changes are reevaluated.
+
+## React
+
+Create one Zero instance per authenticated user/tenant lifecycle and provide it:
+
+```tsx
+import { Zero } from "@rocicorp/zero";
+import type { ClientContext } from "@laravel-zero/client";
+import { ZeroProvider } from "@laravel-zero/client/react";
+import { schema, mutators } from "./zero/generated";
+
+const zero = new Zero<typeof schema, undefined, ClientContext>({
+  schema,
+  mutators,
+  userID: String(user.id),
+  context: { user_id: user.id },
+  cacheURL: "http://localhost:4848",
+  queryURL: "http://localhost:8000/zero/query",
+  mutateURL: "http://localhost:8000/zero/mutate",
+});
+
+// Inside your application root:
+<ZeroProvider zero={zero}>
+  <App />
+</ZeroProvider>;
+```
+
+Close the old instance with `await zero.close()` when its lifecycle ends. Replace
+it when the user or tenant changes; use a distinct `storageKey` for each tenant
+and remount the provider subtree. Do not reuse a client by mutating its context.
+Pass the trusted tenant value in local context when using tenant authorization.
+
+```tsx
+import { useData, useFilter, useMutation } from "@laravel-zero/client/react";
+import { Task } from "./zero/generated";
+
+function Tasks() {
+  const [title, TitleFilter] = useFilter(Task, "title", { debounceMs: 150 });
+  const tasks = useData(
+    Task.query().all().with("list").filter(title).infinite(50),
+  );
+  const create = useMutation(Task.create());
+
+  return (
+    <>
+      <TitleFilter label="Search tasks" />
+      <button
+        disabled={create.state.status === "pending"}
+        onClick={() => create({ title: "Hello" })}
+      >
+        Add task
+      </button>
+      {tasks.data.map((task) => (
+        <p key={task.id}>{task.title}</p>
+      ))}
+      <button
+        disabled={tasks.infinite?.hasMore !== true}
+        onClick={() => tasks.infinite?.loadMore()}
+      >
+        Load more
+      </button>
+    </>
+  );
+}
+```
+
+`useData` exposes `data`, `complete`, native `details`, `connection`, `error`,
+`retry()`, and a `status` of `idle`, `loading`, `refreshing`, `failure`, `stale`, or
+`success`. Disabled queries are idle; incomplete empty results are loading;
+incomplete current-query rows are refreshing; complete empty results succeed.
+Query errors with current data are stale; errors without data are failures.
+Connection state remains separate. `render()` accepts the six matching handlers:
+`onIdle`, `onLoading`, `onRefreshing(rows)`, `onFailure(error)`,
+`onStale([rows, error])`, and `onSuccess(rows)`.
+
+Other query examples:
+
+```ts
+Task.query().one(id).with("list"); // Row | undefined, including visibility-filtered relations.
+Task.query().all().orderBy("title").limit(25);
+Task.query().all().withTrashed();
+Task.query().all().onlyTrashed();
+// If a declared direct to-many relation is named comments:
+Task.query().all().with("comments", 5);
+// If list declares a tasks include:
+Task.query()
+  .all()
+  .with("list", (list) => list.with("tasks", 5));
+```
+
+Builders are immutable and track included result shapes. Singular queries allow
+includes but not filters or pagination. Infinite loading expands one live ordered
+query, uses a lookahead row, resets on query/client changes, and respects `maxLimit`.
+`hasMore` is unknown until sufficient data arrives; `capped` reports the maximum.
+
+`useFilters(Task, ['done', 'title'])` returns `[filters, Controls]` for
+`.filters(filters)`. `useFilter` also returns a third setter. Undefined unsets a
+filter; null, false, and empty strings remain distinct. Substring filters accept
+strings only. Custom per-filter controls use `FilterControlProps<Value>`;
+`FilterProvider` can supply shared control defaults. Controls retain their identity
+while editing. Initial values/options belong to the mounted filter binding.
+The basic date control edits UTC; use a custom control for local-calendar semantics.
+
+Mutations return native `client` and `server` completion promises plus the stable
+record `id`. `state` reports pending/success/failure and field errors; `form`
+describes columns/writable fields, and `reset()` resets hook state. Handle both
+synchronous `InputError` from preparation and asynchronous mutation outcomes.
+
+```ts
+const update = useMutation(Task.update());
+const call = update({ id, completed_at: new Date() });
+const result = await call.server;
+// result.type is 'success' or 'error'; inspect result.error on failure.
+```
+
+Outside React, use `zero.mutate(Task.create().prepare(input))`, or
+`Task.query().all().decode(await zero.run(Task.query().all().request()))`.
+Public dates are `Date`; native Zero rows/requests use epoch milliseconds.
+`HasUuids` uses UUIDv7 and `HasUlids` uses ULID. IDs and the optimistic clock are
+captured once before enqueueing. Eloquent timestamp column constants are respected.
+For millisecond-preserving writes, use temporal columns with matching precision
+and an Eloquent `$dateFormat` such as `Y-m-d H:i:s.u`.
+
+To customize the client clock or generated-ID provider, call
+`createLaravelZero(schema, definitions, {now: () => new Date(), id: (kind, model) => ...})`
+and use its returned models/queries/mutators together. Custom IDs must still match
+the declared UUID/ULID strategy. Native Zero options configure storage and transport.
+
+## Supported constraints
+
+- Automatic `all`/`one` and create/update/destroy/restore/force_delete only.
+  Custom queries/mutations, upsert, and Inertia adapters are deferred.
+- One upstream connection, unprefixed tables in `public`, one model per table,
+  and unique model short names. Creates require standard `HasUuids` or `HasUlids`;
+  existing numeric-key models can read/update/delete without optimistic creates.
+- Plain belongs-to, has-one, has-many, and belongs-to-many relations. Pivots need
+  real primary keys and cannot also be registered as models. Constrained or
+  polymorphic Eloquent relations fail generation.
+- Direct to-many includes can be limited. Native Zero junction includes cannot
+  be ordered or limited. Includes nest to a maximum depth of eight.
+- Portable SQL scalar/JSON columns and date/timestamp columns. JSON filtering and
+  sorting, SQL time-only fields, custom database types, and arrays are unsupported.
+  JavaScript numeric precision applies to bigint/decimal data.
+- Eloquent scopes, accessors, encrypted casts, appended properties, and arbitrary
+  PHP logic do not execute on replicated reads. Keep sensitive stored columns
+  excluded and express visibility using Zero attributes.
+- Server-only validation, normalization, defaults, timestamps, and model events
+  can reconcile optimistic values. Keep external event side effects after commit.
+
+## Development and verification
+
+```sh
+composer install
+pnpm install --frozen-lockfile
+composer test
+pnpm test
+pnpm typecheck
+pnpm contracts:check
+pnpm build
+pnpm package:check
+composer format:check
+pnpm format:check
+```
+
+The PostgreSQL tests are skipped unless `ZERO_TEST_PG_DATABASE` is set. Create an
+empty disposable database named `laravel_zero_test` (or `laravel_zero_test_*`),
+set optional `ZERO_TEST_PG_HOST`, `PORT`, `USER`, and `PASSWORD`, then run
+`ZERO_TEST_PG_DATABASE=laravel_zero_test composer test`. The harness refuses an
+existing application schema and removes only its owned fixtures.
+
+Tests cover metadata/privacy, PHP/native Zero AST equivalence, FormRequests,
+policies, real native optimistic CRUD, protocol ordering/rollback/rejections,
+PostgreSQL publications, React states, pagination, and filter controls. CI checks
+Laravel 12/13 and PHP 8.3/8.5. A live cache deployment is still a separate end-to-end
+verification step. See [architecture](docs/architecture.md) for the core invariants.
+
+MIT licensed.

@@ -31,5 +31,5 @@ hydrated mutable models are included in this first version.
 
 Behavior tests precede each implementation slice. Protocol and query tests use
 the pinned upstream package, including PHP/TypeScript AST comparison. PostgreSQL
-integration tests cover ordered processing, rollback, concurrency, and publication
+integration tests cover ordered processing, rollback, durable rejections, and publication
 changes. React tests cover states, pagination reset, controls, and mutation outcomes.
