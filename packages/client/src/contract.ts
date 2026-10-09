@@ -37,6 +37,7 @@ export interface ModelContract {
         readonly op: string;
         readonly value: { readonly context: string } | { readonly literal: string | number | boolean | null };
     }[];
+    readonly authorizationRelations?: readonly string[];
     readonly serverFill: Readonly<Record<string, string>>;
     readonly writable: readonly string[];
     readonly idGenerator: 'uuid' | 'ulid' | null;

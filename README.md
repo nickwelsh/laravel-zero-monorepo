@@ -6,7 +6,7 @@ generate a native Zero schema and typed TypeScript models, and subscribe from Re
 Laravel authenticates reads and authorizes writes; Zero owns replication, local
 subscriptions, optimistic replay, and reconciliation.
 
-This monorepo contains `nickwelsh/laravel-zero` at the root and
+This monorepo contains `nickwelsh/laravel-zero` in `packages/laravel` and
 `@laravel-zero/client` in `packages/client`. The client has a framework-independent
 core and a separate `/react` export. Both target **Zero 1.10.0**.
 
@@ -135,6 +135,24 @@ includes, and relationship filters. Missing trusted context denies access.
 resolver after verifying tenant membership. Configure that resolver with
 `zero.context_resolver`. The browser context supplies local query values and
 optimistic fills; Laravel independently resolves authoritative context.
+
+## Visibility through relationships
+
+Use `#[ZeroAuthorizeRelation('memberships')]` to require at least one related row
+that is visible under the related model's own authorization. For a shared list,
+annotate memberships with `#[ZeroAuthorize('user_id', '=', ContextField::UserId)]`
+and the list with `#[ZeroAuthorizeRelation('memberships')]`. Todos can then use
+`#[ZeroAuthorizeRelation('list')]` to inherit access to their parent list.
+
+These predicates compile to correlated `EXISTS` queries in both Laravel and the
+native client. Multiple scalar and relationship authorization attributes combine
+with AND. Authorization relations do not automatically become allowed includes;
+declare includes separately. Register every target model. Cycles and authorization
+paths deeper than eight relationships fail generation. Write policies and
+FormRequests still control mutations and association changes.
+
+See [the authenticated todos example](examples/todos/README.md) for shared lists,
+PostgreSQL, and Herd HTTPS setup.
 
 ## Policies and validation
 

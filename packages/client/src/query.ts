@@ -82,10 +82,21 @@ function buildQuery(
     args: QueryArgs | IncludeArgs,
     ctx: ClientContext,
     junction = false,
+    depth = 0,
 ): DynamicQuery {
+    if (depth > 8) fail('include', 'Includes exceed the maximum depth.');
     for (const rule of model.authorization) {
         const value = 'context' in rule.value ? contextValue(ctx, rule.value.context) : rule.value.literal;
         query = query.where(rule.field as never, rule.op as never, value as never);
+    }
+    for (const name of model.authorizationRelations ?? []) {
+        const relation = model.relations[name];
+        if (!relation) fail('authorization', 'Unknown authorization relation.');
+        const target = defs[relation.model];
+        if (!target) fail('authorization', 'Unknown authorization model.');
+        query = query.whereExists(name, (related) =>
+            buildQuery(related as DynamicQuery, defs, target, {}, ctx, false, depth + 1),
+        );
     }
     const filters = 'filters' in args ? (args.filters ?? {}) : {};
     const trashed = filters.trashed ?? 'without';
@@ -97,7 +108,10 @@ function buildQuery(
         if (filter.kind === 'belongsTo') {
             const target = defs[model.relations[filter.field]!.model]!;
             query = query.whereExists(filter.field, (related) =>
-                buildQuery(related as DynamicQuery, defs, target, {}, ctx).where(target.key as never, value as never),
+                buildQuery(related as DynamicQuery, defs, target, {}, ctx, false, depth + 1).where(
+                    target.key as never,
+                    value as never,
+                ),
             );
         } else {
             const operand = filter.kind === 'partial' ? `%${(value as string).replace(/[\\%_]/g, '\\$&')}%` : value;
@@ -117,7 +131,15 @@ function buildQuery(
     for (const [name, spec] of Object.entries(args.include ?? {})) {
         const relation = model.relations[name]!;
         query = query.related(name, (related) =>
-            buildQuery(related as DynamicQuery, defs, defs[relation.model]!, spec, ctx, relation.path.length > 1),
+            buildQuery(
+                related as DynamicQuery,
+                defs,
+                defs[relation.model]!,
+                spec,
+                ctx,
+                relation.path.length > 1,
+                depth + 1,
+            ),
         );
     }
     return query;
