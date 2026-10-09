@@ -7,6 +7,8 @@
     "test": "vitest run",
     "typecheck": "tsc --noEmit",
     "build": "pnpm --filter @laravel-zero/client build",
+    "contracts:check": "node scripts/check-generated.mjs",
+    "package:check": "node scripts/check-package.mjs",
     "format": "prettier --write .",
     "format:check": "prettier --check ."
   },
