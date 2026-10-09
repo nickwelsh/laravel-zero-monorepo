@@ -167,12 +167,9 @@ function buildQuery(
   return query;
 }
 
-export type SelectionData<Q> =
-  Q extends Selection<Schema, ContractMap, string, infer Row, infer One>
-    ? One extends true
-      ? Row | undefined
-      : readonly Row[]
-    : never;
+export type SelectionData<Q> = Q extends { decode(raw: unknown): infer Data }
+  ? Data
+  : never;
 
 export class Selection<
   S extends Schema,

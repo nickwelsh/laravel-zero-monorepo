@@ -1,5 +1,5 @@
 import { Task, TaskList, definitions } from "./generated";
-import type { CreateInput, Filter } from "@laravel-zero/client";
+import type { SelectionData } from "@laravel-zero/client";
 import {
   useData,
   useFilter,
@@ -12,7 +12,9 @@ import type { ComponentType } from "react";
 
 // Compiled by typecheck; these are public-contract checks, not runtime tests.
 function useContracts() {
-  const data = useData(Task.query().all().with("list"));
+  const selection = Task.query().all().with("list");
+  const data = useData(selection);
+  const selected: SelectionData<typeof selection> = data.data;
   const date: Date | null | undefined = data.data[0]?.completed_at;
   const name: string | undefined = data.data[0]?.list?.name;
   const one = useData(Task.query().one("id").with("list"));
