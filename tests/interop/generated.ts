@@ -38,7 +38,10 @@ const table4Relations = relationships(table4, ({one, many}) => ({
   "tags": many({sourceField: ["id"], destField: ["task_id"], destSchema: table3}, {sourceField: ["tag_id"], destField: ["id"], destSchema: table2}),
   "comments": many({sourceField: ["id"], destField: ["task_id"], destSchema: table0}),
 }));
-export const schema = createSchema({tables: [table0, table1, table2, table3, table4], relationships: [table4Relations], enableLegacyQueries: false, enableLegacyMutators: false});
+const table1Relations = relationships(table1, ({one, many}) => ({
+  "tasks": many({sourceField: ["id"], destField: ["list_id"], destSchema: table4}),
+}));
+export const schema = createSchema({tables: [table0, table1, table2, table3, table4], relationships: [table4Relations, table1Relations], enableLegacyQueries: false, enableLegacyMutators: false});
 export const definitions = {
     "Comment": {
         "name": "Comment",
@@ -425,12 +428,30 @@ export const definitions = {
             "deleted": null
         },
         "filters": {},
-        "includes": [],
+        "includes": [
+            "tasks"
+        ],
         "sorts": [],
         "defaultOrder": [],
         "defaultLimit": 50,
         "maxLimit": 1000,
-        "relations": {}
+        "relations": {
+            "tasks": {
+                "model": "Task",
+                "cardinality": "many",
+                "path": [
+                    {
+                        "source": [
+                            "id"
+                        ],
+                        "dest": [
+                            "list_id"
+                        ],
+                        "table": "tasks"
+                    }
+                ]
+            }
+        }
     }
 } as const satisfies ContractMap;
 export const {models, queries, mutators} = createLaravelZero(schema, definitions);

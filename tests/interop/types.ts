@@ -30,6 +30,25 @@ function useContracts() {
   // @ts-expect-error junction includes cannot have a limit
   Task.query().all().with("tags", 5);
   Task.query().all().with("comments", 5);
+  const nested = useData(
+    Task.query()
+      .all()
+      .with("list", (list) => list.with("tasks", 2)),
+  );
+  const nestedDate: Date | null | undefined =
+    nested.data[0]?.list?.tasks[0]?.created_at;
+  Task.query()
+    .all()
+    .with("list", (list) => {
+      // @ts-expect-error nested to-one includes cannot have limits either
+      return list.limit(2);
+    });
+  Task.query()
+    .all()
+    .with("list", (list) => {
+      // @ts-expect-error nested includes remain opt-in
+      return list.with("user");
+    });
   // @ts-expect-error queries are opt-in
   TaskList.query().all();
   // @ts-expect-error mutations are opt-in

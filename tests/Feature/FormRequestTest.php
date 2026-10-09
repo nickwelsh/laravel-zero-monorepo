@@ -10,10 +10,7 @@ use LaravelZero\Definition\ZeroDefinition;
 use LaravelZero\Generation\TypeScriptGenerator;
 use LaravelZero\Metadata\ModelRegistry;
 use LaravelZero\Mutation\CrudExecutor;
-use LaravelZero\Tests\Fixtures\Comment;
-use LaravelZero\Tests\Fixtures\Tag;
 use LaravelZero\Tests\Fixtures\Task;
-use LaravelZero\Tests\Fixtures\TaskList;
 use LaravelZero\Tests\TestCase;
 use LaravelZero\ZeroContext;
 
@@ -21,7 +18,7 @@ class FormRequestTest extends TestCase
 {
     public function test_generates_portable_validation_and_reports_server_only_rules(): void
     {
-        $registry = new ModelRegistry([ValidatedTask::class, TaskList::class, Tag::class, Comment::class]);
+        $registry = new ModelRegistry([ValidatedTask::class]);
         $source = (new TypeScriptGenerator)->generate($registry);
         self::assertStringContainsString('max:12', $source);
         self::assertStringContainsString('validation', $source);
@@ -33,7 +30,7 @@ class FormRequestTest extends TestCase
         Gate::define('create', fn ($user, $model) => true);
         $user = (new User)->setKeyType('string');
         $user->forceFill(['id' => 'alice']);
-        $executor = new CrudExecutor(new ModelRegistry([ValidatedTask::class, TaskList::class, Tag::class, Comment::class]));
+        $executor = new CrudExecutor(new ModelRegistry([ValidatedTask::class]));
         $executor->execute('ValidatedTask.create', ['id' => '019a0000-0000-7000-8000-000000000001', 'data' => ['title' => '  Trim me  ', 'completed_at' => 1700000000000], 'now' => 1], new ZeroContext(['user_id' => 'alice']), $user);
         self::assertSame('Trim me', Task::firstOrFail()->title);
         self::assertSame(1700000000000, Task::firstOrFail()->completed_at->getTimestampMs());
@@ -45,7 +42,7 @@ class FormRequestTest extends TestCase
         $user = (new User)->setKeyType('string');
         $user->forceFill(['id' => 'alice']);
         $this->expectException(ValidationException::class);
-        (new CrudExecutor(new ModelRegistry([ValidatedTask::class, TaskList::class, Tag::class, Comment::class])))->execute('ValidatedTask.create', ['id' => '019a0000-0000-7000-8000-000000000001', 'data' => ['title' => 'Far too long for the rules'], 'now' => 1], new ZeroContext(['user_id' => 'alice']), $user);
+        (new CrudExecutor(new ModelRegistry([ValidatedTask::class])))->execute('ValidatedTask.create', ['id' => '019a0000-0000-7000-8000-000000000001', 'data' => ['title' => 'Far too long for the rules'], 'now' => 1], new ZeroContext(['user_id' => 'alice']), $user);
     }
 }
 
@@ -53,7 +50,7 @@ class ValidatedTask extends Task
 {
     public static function zero(): ZeroDefinition
     {
-        return parent::zero()->mutationRequests(['create' => StoreTask::class]);
+        return ZeroDefinition::make()->mutationRequests(['create' => StoreTask::class]);
     }
 }
 

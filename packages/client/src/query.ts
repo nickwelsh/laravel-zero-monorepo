@@ -21,8 +21,10 @@ import type {
   FilterValue,
   IncludeName,
   RelatedRow,
+  RelatedName,
   RelationLimit,
 } from "./contract";
+import { IncludeSelection, includeSpec, type IncludedRow } from "./include";
 import {
   columnValue,
   contextValue,
@@ -251,8 +253,40 @@ export class Selection<
   with<R extends IncludeName<D, N>>(
     relation: R,
     limit?: RelationLimit<D, N, R>,
-  ): Selection<S, D, N, Row & { readonly [K in R]: RelatedRow<D, N, R> }, One> {
-    const spec: IncludeArgs = limit === undefined ? {} : { limit };
+  ): Selection<
+    S,
+    D,
+    N,
+    Omit<Row, R> & { readonly [K in R]: RelatedRow<D, N, R> },
+    One
+  >;
+  with<R extends IncludeName<D, N>, Child>(
+    relation: R,
+    refine: (
+      child: IncludeSelection<
+        D,
+        RelatedName<D, N, R>,
+        ModelRow<D, RelatedName<D, N, R>>,
+        RelationLimit<D, N, R>
+      >,
+    ) => IncludeSelection<
+      D,
+      RelatedName<D, N, R>,
+      Child,
+      RelationLimit<D, N, R>
+    >,
+  ): Selection<
+    S,
+    D,
+    N,
+    Omit<Row, R> & { readonly [K in R]: IncludedRow<D, N, R, Child> },
+    One
+  >;
+  with(
+    relation: IncludeName<D, N>,
+    refinement?: unknown,
+  ): Selection<S, D, N, any, One> {
+    const spec = includeSpec(this.definitions, this.name, relation, refinement);
     return this.copy({
       ...this.args,
       include: { ...this.args.include, [relation]: spec },

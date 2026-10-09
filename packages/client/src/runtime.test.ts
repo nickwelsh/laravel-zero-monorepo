@@ -9,6 +9,23 @@ import {
 import { createLaravelZero } from "./index";
 
 describe("generated models", () => {
+  it("tracks nested include shapes and refinements", () => {
+    const selection = Task.query()
+      .all()
+      .with("list", (list) => list.with("tasks", 2));
+    expect(selection.args.include).toEqual({
+      list: { include: { tasks: { limit: 2 } } },
+    });
+    const rows = selection.decode([
+      {
+        id: "a",
+        list: { id: "l", tasks: [{ id: "b", created_at: 1700000000000 }] },
+      },
+    ]);
+    expect(rows[0]?.list?.tasks[0]?.created_at).toEqual(
+      new Date(1700000000000),
+    );
+  });
   it("validates portable FormRequest rules before enqueueing", () => {
     const runtime = createLaravelZero(schema, {
       ...definitions,
