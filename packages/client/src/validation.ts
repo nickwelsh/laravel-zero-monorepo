@@ -164,6 +164,8 @@ function validateRefinement(
   keys(filters, Object.keys(model.filters), "filters");
   for (const [name, value] of Object.entries(filters)) {
     const filter = model.filters[name]!;
+    if (filter.kind === "partial" && typeof value !== "string")
+      fail(name, "Expected a string.");
     if (filter.kind === "trashed") {
       if (!["without", "with", "only"].includes(value as string))
         fail(name, "Invalid trashed filter.");

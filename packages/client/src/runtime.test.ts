@@ -9,6 +9,23 @@ import {
 import { createLaravelZero } from "./index";
 
 describe("generated models", () => {
+  it("rejects null substring filters even when the column is nullable", () => {
+    const runtime = createLaravelZero(schema, {
+      ...definitions,
+      Task: {
+        ...definitions.Task,
+        columns: {
+          ...definitions.Task.columns,
+          title: { ...definitions.Task.columns.title, nullable: true },
+        },
+      },
+    } as const);
+    expect(() =>
+      runtime.models.Task.query()
+        .all()
+        .filter({ model: "Task", name: "title", value: null } as never),
+    ).toThrow(/string/i);
+  });
   it("tracks nested include shapes and refinements", () => {
     const selection = Task.query()
       .all()

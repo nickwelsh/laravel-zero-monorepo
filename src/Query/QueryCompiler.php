@@ -76,6 +76,9 @@ final readonly class QueryCompiler
             } else {
                 Input::value($value, $model->columns[$field], "filters.{$name}");
                 if ($filter['kind'] === 'partial') {
+                    if (! is_string($value)) {
+                        Input::fail("filters.{$name}", 'Expected a string.');
+                    }
                     $value = '%'.strtr($value, ['\\' => '\\\\', '%' => '\\%', '_' => '\\_']).'%';
                 }
                 $conditions[] = $this->comparison($field, $filter['kind'] === 'partial' ? 'ILIKE' : ($value === null ? 'IS' : '='), $value);

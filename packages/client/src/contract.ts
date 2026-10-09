@@ -94,11 +94,13 @@ export type FilterValue<
   F extends FilterName<D, N>,
 > = D[N]["filters"][F]["kind"] extends "trashed"
   ? "without" | "with" | "only"
-  : D[N]["filters"][F]["kind"] extends "belongsTo"
+  : D[N]["filters"][F]["kind"] extends "partial"
     ? string
-    : D[N]["filters"][F]["field"] extends keyof D[N]["columns"]
-      ? ColumnValue<D[N]["columns"][D[N]["filters"][F]["field"]]>
-      : never;
+    : D[N]["filters"][F]["kind"] extends "belongsTo"
+      ? string
+      : D[N]["filters"][F]["field"] extends keyof D[N]["columns"]
+        ? ColumnValue<D[N]["columns"][D[N]["filters"][F]["field"]]>
+        : never;
 export type Filter<
   D extends ContractMap,
   N extends keyof D,

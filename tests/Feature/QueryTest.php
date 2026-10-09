@@ -4,15 +4,25 @@ namespace LaravelZero\Tests\Feature;
 
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Validation\ValidationException;
+use LaravelZero\Definition\AllowedFilter;
+use LaravelZero\Definition\ZeroDefinition;
 use LaravelZero\Metadata\ModelRegistry;
 use LaravelZero\Query\QueryCompiler;
 use LaravelZero\Query\QueryProcessor;
+use LaravelZero\Tests\Fixtures\Task;
 use LaravelZero\Tests\TestCase;
 use LaravelZero\ZeroContext;
 use PHPUnit\Framework\Attributes\DataProvider;
 
 class QueryTest extends TestCase
 {
+    public function test_nullable_substring_filters_reject_null(): void
+    {
+        $compiler = new QueryCompiler(new ModelRegistry([NullablePartialTask::class]));
+        $this->expectException(ValidationException::class);
+        $compiler->compile('NullablePartialTask.all', ['filters' => ['list_id' => null]], new ZeroContext(['user_id' => 'alice']));
+    }
+
     private function compiler(): QueryCompiler
     {
         return new QueryCompiler(new ModelRegistry($this->models()));
@@ -84,5 +94,13 @@ class QueryTest extends TestCase
         self::assertArrayHasKey('ast', $result['queries'][0]);
         self::assertSame('parse', $result['queries'][1]['error']);
         self::assertSame('alice', $result['userID']);
+    }
+}
+
+class NullablePartialTask extends Task
+{
+    public static function zero(): ZeroDefinition
+    {
+        return ZeroDefinition::make()->allowedFilters([AllowedFilter::partial('list_id')]);
     }
 }
