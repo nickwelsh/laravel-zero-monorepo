@@ -1,0 +1,11 @@
+packages:
+  - packages/*
+allowBuilds:
+  '@rocicorp/zero-sqlite3': set this to true or false
+  esbuild: set this to true or false
+  protobufjs: set this to true or false
+minimumReleaseAgeExclude:
+  - '@rocicorp/zero@1.10.0'
+onlyBuiltDependencies:
+  - esbuild
+  - '@rocicorp/zero-sqlite3'

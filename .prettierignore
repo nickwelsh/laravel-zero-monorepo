@@ -1,0 +1,7 @@
+vendor
+node_modules
+dist
+composer.lock
+pnpm-lock.yaml
+*.php
+phpunit.xml

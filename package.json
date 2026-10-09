@@ -1,0 +1,28 @@
+{
+  "name": "laravel-zero-monorepo",
+  "private": true,
+  "type": "module",
+  "packageManager": "pnpm@11.24.0",
+  "scripts": {
+    "test": "vitest run",
+    "typecheck": "tsc --noEmit",
+    "build": "pnpm --filter @laravel-zero/client build",
+    "format": "prettier --write .",
+    "format:check": "prettier --check ."
+  },
+  "devDependencies": {
+    "@rocicorp/zero": "1.10.0",
+    "@testing-library/react": "^16.3.0",
+    "@types/node": "^22.0.0",
+    "@types/react": "^19.0.0",
+    "jsdom": "^27.0.0",
+    "prettier": "^3.6.0",
+    "react": "^19.0.0",
+    "react-dom": "^19.0.0",
+    "tsup": "^8.5.0",
+    "typescript": "^6.0.2",
+    "ulid": "^3.0.0",
+    "uuid": "^13.0.0",
+    "vitest": "^4.1.0"
+  }
+}
