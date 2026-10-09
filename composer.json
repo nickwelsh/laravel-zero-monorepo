@@ -16,13 +16,29 @@
     "phpunit/phpunit": "^12.0",
     "laravel/pint": "^1.0"
   },
-  "autoload": {"psr-4": {"LaravelZero\\": "src/"}},
-  "autoload-dev": {"psr-4": {"LaravelZero\\Tests\\": "tests/"}},
-  "extra": {"laravel": {"providers": ["LaravelZero\\ZeroServiceProvider"]}},
+  "autoload": {
+    "psr-4": {
+      "LaravelZero\\": "src/"
+    }
+  },
+  "autoload-dev": {
+    "psr-4": {
+      "LaravelZero\\Tests\\": "tests/"
+    }
+  },
+  "extra": {
+    "laravel": {
+      "providers": [
+        "LaravelZero\\ZeroServiceProvider"
+      ]
+    }
+  },
   "scripts": {
     "test": "phpunit",
     "format": "pint",
     "format:check": "pint --test"
   },
-  "config": {"sort-packages": true}
+  "config": {
+    "sort-packages": true
+  }
 }
