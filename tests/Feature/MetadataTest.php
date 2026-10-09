@@ -6,6 +6,8 @@ use Illuminate\Database\Eloquent\Model;
 use LaravelZero\Attributes\ZeroExclude;
 use LaravelZero\Attributes\ZeroPublic;
 use LaravelZero\Metadata\ModelRegistry;
+use LaravelZero\Tests\Fixtures\Comment;
+use LaravelZero\Tests\Fixtures\Tag;
 use LaravelZero\Tests\Fixtures\Task;
 use LaravelZero\Tests\Fixtures\TaskList;
 use LaravelZero\Tests\TestCase;
@@ -15,7 +17,7 @@ class MetadataTest extends TestCase
 {
     public function test_resolves_one_column_plan_and_separate_public_mutation_inputs(): void
     {
-        $registry = new ModelRegistry([Task::class, TaskList::class]);
+        $registry = new ModelRegistry($this->models());
         $task = $registry->get('Task');
         self::assertArrayNotHasKey('secret', $task->columns);
         self::assertSame('uuid', $task->idGenerator);
@@ -39,7 +41,7 @@ class MetadataTest extends TestCase
     {
         $this->expectException(LogicException::class);
         $this->expectExceptionMessage('list_id');
-        new ModelRegistry([HiddenRelationTask::class, TaskList::class]);
+        new ModelRegistry([HiddenRelationTask::class, TaskList::class, Tag::class, Comment::class]);
     }
 
     public function test_exclusions_are_additive_to_eloquent_hidden_columns(): void

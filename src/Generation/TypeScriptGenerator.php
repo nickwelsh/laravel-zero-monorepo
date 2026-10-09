@@ -21,7 +21,7 @@ final class TypeScriptGenerator
                     $columns[$column['name']] = ['type' => preg_match('/int|numeric/', $column['type_name']) ? 'number' : 'string', 'nullable' => false];
                 }
             }
-            $tables[$table] = ['columns' => $columns, 'key' => $keys];
+            $tables[$table] = ['columns' => $columns, 'key' => $registry->pivotKeys()[$table]];
         }
         ksort($tables);
         $names = [];

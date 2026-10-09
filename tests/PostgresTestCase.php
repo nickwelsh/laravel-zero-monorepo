@@ -37,6 +37,9 @@ abstract class PostgresTestCase extends TestCase
             DB::statement('DROP SCHEMA IF EXISTS zero_test_0 CASCADE');
             Schema::dropIfExists('tasks');
             Schema::dropIfExists('lists');
+            Schema::dropIfExists('task_tag');
+            Schema::dropIfExists('tags');
+            Schema::dropIfExists('comments');
         }
         parent::tearDown();
     }

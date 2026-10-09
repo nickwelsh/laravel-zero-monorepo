@@ -118,9 +118,9 @@ final readonly class QueryCompiler
         $ast['alias'] = $predicate ? 'zsubq_'.$name : $name;
         if (count($path) > 1) {
             // Zero cannot apply an explicit ordering through a junction include.
-            $ast['orderBy'] = [[$target->key, 'asc']];
+            unset($ast['orderBy']);
             $inner = ['correlation' => ['parentField' => $path[1]['source'], 'childField' => $path[1]['dest']], 'subquery' => $ast, 'system' => 'client'];
-            $ast = ['table' => $path[0]['table'], 'alias' => $name, 'related' => [$inner], 'orderBy' => array_map(fn ($key) => [$key, 'asc'], $this->registry->pivots()[$path[0]['table']])];
+            $ast = ['table' => $path[0]['table'], 'alias' => $name, 'related' => [$inner]];
         }
         $result = ['correlation' => ['parentField' => $path[0]['source'], 'childField' => $path[0]['dest']], 'subquery' => $ast, 'system' => 'client'];
         if (count($path) > 1) {

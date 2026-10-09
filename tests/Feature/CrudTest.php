@@ -9,7 +9,6 @@ use Illuminate\Validation\ValidationException;
 use LaravelZero\Metadata\ModelRegistry;
 use LaravelZero\Mutation\CrudExecutor;
 use LaravelZero\Tests\Fixtures\Task;
-use LaravelZero\Tests\Fixtures\TaskList;
 use LaravelZero\Tests\TestCase;
 use LaravelZero\ZeroContext;
 
@@ -19,7 +18,7 @@ class CrudTest extends TestCase
     {
         Gate::policy(Task::class, TaskPolicy::class);
 
-        return new CrudExecutor(new ModelRegistry([Task::class, TaskList::class]));
+        return new CrudExecutor(new ModelRegistry($this->models()));
     }
 
     private function user(string $id = 'alice'): User
@@ -80,7 +79,7 @@ class CrudTest extends TestCase
 
     public function test_mutations_fail_closed_without_an_allowing_policy(): void
     {
-        $executor = new CrudExecutor(new ModelRegistry([Task::class, TaskList::class]));
+        $executor = new CrudExecutor(new ModelRegistry($this->models()));
         $this->expectException(AuthorizationException::class);
         $executor->execute('Task.create', ['id' => '019a0000-0000-7000-8000-000000000001', 'data' => ['title' => 'Hello'], 'now' => 1], new ZeroContext(['user_id' => 'alice']), $this->user());
     }

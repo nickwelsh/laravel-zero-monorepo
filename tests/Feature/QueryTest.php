@@ -7,8 +7,6 @@ use Illuminate\Validation\ValidationException;
 use LaravelZero\Metadata\ModelRegistry;
 use LaravelZero\Query\QueryCompiler;
 use LaravelZero\Query\QueryProcessor;
-use LaravelZero\Tests\Fixtures\Task;
-use LaravelZero\Tests\Fixtures\TaskList;
 use LaravelZero\Tests\TestCase;
 use LaravelZero\ZeroContext;
 use PHPUnit\Framework\Attributes\DataProvider;
@@ -17,7 +15,7 @@ class QueryTest extends TestCase
 {
     private function compiler(): QueryCompiler
     {
-        return new QueryCompiler(new ModelRegistry([Task::class, TaskList::class]));
+        return new QueryCompiler(new ModelRegistry($this->models()));
     }
 
     public function test_root_and_related_authorization_cannot_be_overridden_by_filters(): void

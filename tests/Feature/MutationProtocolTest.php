@@ -9,7 +9,6 @@ use LaravelZero\Metadata\ModelRegistry;
 use LaravelZero\Mutation\CrudExecutor;
 use LaravelZero\Mutation\MutationProcessor;
 use LaravelZero\Tests\Fixtures\Task;
-use LaravelZero\Tests\Fixtures\TaskList;
 use LaravelZero\Tests\PostgresTestCase;
 use LaravelZero\ZeroContext;
 
@@ -20,7 +19,7 @@ class MutationProtocolTest extends PostgresTestCase
         $user = (new User)->setKeyType('string');
         $user->forceFill(['id' => 'alice']);
         Gate::define('create', fn ($user, $model) => true);
-        $registry = new ModelRegistry([Task::class, TaskList::class]);
+        $registry = new ModelRegistry($this->models());
         $processor = new MutationProcessor($registry, new CrudExecutor($registry), 'test', 'zero_test_0');
 
         return $processor->process([

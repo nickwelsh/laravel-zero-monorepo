@@ -2,12 +2,27 @@
 import {table, string, number, boolean, json, relationships, createSchema} from '@rocicorp/zero';
 import {createLaravelZero, type ContractMap, type ModelRow} from '@laravel-zero/client';
 
-const table0 = table("lists").columns({
+const table0 = table("comments").columns({
+  "id": string(),
+  "task_id": string(),
+  "user_id": string(),
+  "body": string(),
+} ).primaryKey("id");
+const table1 = table("lists").columns({
   "id": string(),
   "user_id": string(),
   "name": string(),
 } ).primaryKey("id");
-const table1 = table("tasks").columns({
+const table2 = table("tags").columns({
+  "id": string(),
+  "user_id": string(),
+  "name": string(),
+} ).primaryKey("id");
+const table3 = table("task_tag").columns({
+  "task_id": string(),
+  "tag_id": string(),
+} ).primaryKey("task_id", "tag_id");
+const table4 = table("tasks").columns({
   "id": string(),
   "user_id": string(),
   "list_id": string().optional(),
@@ -18,11 +33,137 @@ const table1 = table("tasks").columns({
   "updated_at": number().optional(),
   "deleted_at": number().optional(),
 } ).primaryKey("id");
-const table1Relations = relationships(table1, ({one, many}) => ({
-  "list": one({sourceField: ["list_id"], destField: ["id"], destSchema: table0}),
+const table4Relations = relationships(table4, ({one, many}) => ({
+  "list": one({sourceField: ["list_id"], destField: ["id"], destSchema: table1}),
+  "tags": many({sourceField: ["id"], destField: ["task_id"], destSchema: table3}, {sourceField: ["tag_id"], destField: ["id"], destSchema: table2}),
+  "comments": many({sourceField: ["id"], destField: ["task_id"], destSchema: table0}),
 }));
-export const schema = createSchema({tables: [table0, table1], relationships: [table1Relations], enableLegacyQueries: false, enableLegacyMutators: false});
+export const schema = createSchema({tables: [table0, table1, table2, table3, table4], relationships: [table4Relations], enableLegacyQueries: false, enableLegacyMutators: false});
 export const definitions = {
+    "Comment": {
+        "name": "Comment",
+        "table": "comments",
+        "key": "id",
+        "columns": {
+            "id": {
+                "type": "string",
+                "nullable": false,
+                "date": false,
+                "enum": null,
+                "hasDefault": false,
+                "default": null
+            },
+            "task_id": {
+                "type": "string",
+                "nullable": false,
+                "date": false,
+                "enum": null,
+                "hasDefault": false,
+                "default": null
+            },
+            "user_id": {
+                "type": "string",
+                "nullable": false,
+                "date": false,
+                "enum": null,
+                "hasDefault": false,
+                "default": null
+            },
+            "body": {
+                "type": "string",
+                "nullable": false,
+                "date": false,
+                "enum": null,
+                "hasDefault": false,
+                "default": null
+            }
+        },
+        "queries": [],
+        "mutations": [],
+        "authorization": [
+            {
+                "field": "user_id",
+                "op": "=",
+                "value": {
+                    "context": "user_id"
+                }
+            }
+        ],
+        "validation": {},
+        "serverFill": {},
+        "writable": [],
+        "idGenerator": null,
+        "timestamps": {
+            "created": null,
+            "updated": null,
+            "deleted": null
+        },
+        "filters": {},
+        "includes": [],
+        "sorts": [],
+        "defaultOrder": [],
+        "defaultLimit": 50,
+        "maxLimit": 1000,
+        "relations": {}
+    },
+    "Tag": {
+        "name": "Tag",
+        "table": "tags",
+        "key": "id",
+        "columns": {
+            "id": {
+                "type": "string",
+                "nullable": false,
+                "date": false,
+                "enum": null,
+                "hasDefault": false,
+                "default": null
+            },
+            "user_id": {
+                "type": "string",
+                "nullable": false,
+                "date": false,
+                "enum": null,
+                "hasDefault": false,
+                "default": null
+            },
+            "name": {
+                "type": "string",
+                "nullable": false,
+                "date": false,
+                "enum": null,
+                "hasDefault": false,
+                "default": null
+            }
+        },
+        "queries": [],
+        "mutations": [],
+        "authorization": [
+            {
+                "field": "user_id",
+                "op": "=",
+                "value": {
+                    "context": "user_id"
+                }
+            }
+        ],
+        "validation": {},
+        "serverFill": {},
+        "writable": [],
+        "idGenerator": null,
+        "timestamps": {
+            "created": null,
+            "updated": null,
+            "deleted": null
+        },
+        "filters": {},
+        "includes": [],
+        "sorts": [],
+        "defaultOrder": [],
+        "defaultLimit": 50,
+        "maxLimit": 1000,
+        "relations": {}
+    },
     "Task": {
         "name": "Task",
         "table": "tasks",
@@ -160,7 +301,9 @@ export const definitions = {
             }
         },
         "includes": [
-            "list"
+            "list",
+            "tags",
+            "comments"
         ],
         "sorts": [
             "title",
@@ -187,6 +330,45 @@ export const definitions = {
                             "id"
                         ],
                         "table": "lists"
+                    }
+                ]
+            },
+            "tags": {
+                "model": "Tag",
+                "cardinality": "many",
+                "path": [
+                    {
+                        "source": [
+                            "id"
+                        ],
+                        "dest": [
+                            "task_id"
+                        ],
+                        "table": "task_tag"
+                    },
+                    {
+                        "source": [
+                            "tag_id"
+                        ],
+                        "dest": [
+                            "id"
+                        ],
+                        "table": "tags"
+                    }
+                ]
+            },
+            "comments": {
+                "model": "Comment",
+                "cardinality": "many",
+                "path": [
+                    {
+                        "source": [
+                            "id"
+                        ],
+                        "dest": [
+                            "task_id"
+                        ],
+                        "table": "comments"
                     }
                 ]
             }
@@ -252,6 +434,10 @@ export const definitions = {
     }
 } as const satisfies ContractMap;
 export const {models, queries, mutators} = createLaravelZero(schema, definitions);
+export const Comment = models.Comment;
+export type CommentRow = ModelRow<typeof definitions, "Comment">;
+export const Tag = models.Tag;
+export type TagRow = ModelRow<typeof definitions, "Tag">;
 export const Task = models.Task;
 export type TaskRow = ModelRow<typeof definitions, "Task">;
 export const TaskList = models.TaskList;

@@ -19,6 +19,7 @@ describe("PHP / native Zero query equivalence", () => {
       { filters: { list: "list-a" }, order: [["title", "asc"]], limit: 23 },
     ],
     ["Task.all", { filters: { trashed: "only" } }],
+    ["Task.all", { include: { tags: {}, comments: { limit: 5 } } }],
     ["Task.one", { id: "a", include: { list: {} } }],
   ] as const) {
     it(`${name} ${JSON.stringify(args)}`, async () => {

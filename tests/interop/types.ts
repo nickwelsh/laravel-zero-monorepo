@@ -27,6 +27,9 @@ function useContracts() {
   Task.query().one("id").infinite();
   // @ts-expect-error to-one includes cannot have a limit
   Task.query().all().with("list", 5);
+  // @ts-expect-error junction includes cannot have a limit
+  Task.query().all().with("tags", 5);
+  Task.query().all().with("comments", 5);
   // @ts-expect-error queries are opt-in
   TaskList.query().all();
   // @ts-expect-error mutations are opt-in

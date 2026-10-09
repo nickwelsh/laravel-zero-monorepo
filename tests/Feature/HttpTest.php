@@ -3,8 +3,6 @@
 namespace LaravelZero\Tests\Feature;
 
 use Illuminate\Foundation\Auth\User;
-use LaravelZero\Tests\Fixtures\Task;
-use LaravelZero\Tests\Fixtures\TaskList;
 use LaravelZero\Tests\TestCase;
 use LaravelZero\ZeroServiceProvider;
 
@@ -18,7 +16,7 @@ class HttpTest extends TestCase
     protected function defineEnvironment($app): void
     {
         parent::defineEnvironment($app);
-        $app['config']->set('zero.models', [Task::class, TaskList::class]);
+        $app['config']->set('zero.models', $this->models());
         $app['config']->set('zero.api_key', 'private-test-secret');
         $app['config']->set('zero.middleware', []);
     }

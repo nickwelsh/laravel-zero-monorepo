@@ -8,6 +8,8 @@ use Illuminate\Database\Schema\Blueprint;
 use LaravelZero\Generation\TypeScriptGenerator;
 use LaravelZero\Metadata\ModelRegistry;
 use LaravelZero\Query\QueryCompiler;
+use LaravelZero\Tests\Fixtures\Comment;
+use LaravelZero\Tests\Fixtures\Tag;
 use LaravelZero\Tests\Fixtures\Task;
 use LaravelZero\Tests\Fixtures\TaskList;
 use LaravelZero\ZeroContext;
@@ -32,8 +34,24 @@ $capsule->schema()->create('lists', function (Blueprint $table) {
     $table->string('user_id');
     $table->string('name');
 });
+$capsule->schema()->create('tags', function (Blueprint $table) {
+    $table->uuid('id')->primary();
+    $table->string('user_id');
+    $table->string('name');
+});
+$capsule->schema()->create('task_tag', function (Blueprint $table) {
+    $table->uuid('task_id');
+    $table->uuid('tag_id');
+    $table->primary(['task_id', 'tag_id']);
+});
+$capsule->schema()->create('comments', function (Blueprint $table) {
+    $table->uuid('id')->primary();
+    $table->uuid('task_id');
+    $table->string('user_id');
+    $table->string('body');
+});
 Container::setInstance($capsule->getContainer());
-$registry = new ModelRegistry([Task::class, TaskList::class]);
+$registry = new ModelRegistry([Task::class, TaskList::class, Tag::class, Comment::class]);
 if (($argv[1] ?? null) === 'generate') {
     echo (new TypeScriptGenerator)->generate($registry);
 } else {

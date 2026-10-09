@@ -5,6 +5,8 @@ namespace LaravelZero\Tests\Fixtures;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use LaravelZero\Attributes\ZeroAuthorize;
 use LaravelZero\Attributes\ZeroMutate;
@@ -37,7 +39,7 @@ class Task extends Model
     {
         return ZeroDefinition::make()
             ->allowedFilters([AllowedFilter::partial('title'), AllowedFilter::exact('done'), AllowedFilter::exact('completed_at'), AllowedFilter::belongsTo('list'), AllowedFilter::trashed()])
-            ->allowedIncludes(['list'])
+            ->allowedIncludes(['list', 'tags', 'comments'])
             ->allowedSorts(['title', 'created_at'])
             ->defaultSort('-created_at');
     }
@@ -45,5 +47,15 @@ class Task extends Model
     public function list(): BelongsTo
     {
         return $this->belongsTo(TaskList::class, 'list_id');
+    }
+
+    public function tags(): BelongsToMany
+    {
+        return $this->belongsToMany(Tag::class, 'task_tag', 'task_id', 'tag_id');
+    }
+
+    public function comments(): HasMany
+    {
+        return $this->hasMany(Comment::class, 'task_id');
     }
 }

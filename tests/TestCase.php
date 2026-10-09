@@ -4,6 +4,10 @@ namespace LaravelZero\Tests;
 
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
+use LaravelZero\Tests\Fixtures\Comment;
+use LaravelZero\Tests\Fixtures\Tag;
+use LaravelZero\Tests\Fixtures\Task;
+use LaravelZero\Tests\Fixtures\TaskList;
 use Orchestra\Testbench\TestCase as Orchestra;
 
 abstract class TestCase extends Orchestra
@@ -35,5 +39,26 @@ abstract class TestCase extends Orchestra
             $table->string('user_id');
             $table->string('name');
         });
+        Schema::create('tags', function (Blueprint $table) {
+            $table->uuid('id')->primary();
+            $table->string('user_id');
+            $table->string('name');
+        });
+        Schema::create('task_tag', function (Blueprint $table) {
+            $table->uuid('task_id');
+            $table->uuid('tag_id');
+            $table->primary(['task_id', 'tag_id']);
+        });
+        Schema::create('comments', function (Blueprint $table) {
+            $table->uuid('id')->primary();
+            $table->uuid('task_id');
+            $table->string('user_id');
+            $table->string('body');
+        });
+    }
+
+    protected function models(array $classes = []): array
+    {
+        return $classes ?: [Task::class, TaskList::class, Tag::class, Comment::class];
     }
 }

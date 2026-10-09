@@ -28,6 +28,8 @@ final class ModelRegistry
 
     private array $pivots = [];
 
+    private array $pivotKeys = [];
+
     private ?string $connectionName = null;
 
     public function __construct(array $classes)
@@ -62,6 +64,11 @@ final class ModelRegistry
     public function pivots(): array
     {
         return $this->pivots;
+    }
+
+    public function pivotKeys(): array
+    {
+        return $this->pivotKeys;
     }
 
     public function connection(): Connection
@@ -228,7 +235,10 @@ final class ModelRegistry
             }
             // Eloquent constraints cannot silently disappear when exported to Zero.
             $query = $relation->getQuery();
-            if ($query->getQuery()->wheres || $query->getQuery()->orders || $query->getQuery()->limit || $query->getQuery()->joins) {
+            $base = $query->getQuery();
+            $joins = $base->joins ?? [];
+            $standardJoin = $relation instanceof BelongsToMany && count($joins) === 1 && $joins[0]->table === $relation->getTable() && $joins[0]->type === 'inner' && count($joins[0]->wheres) === 1 && $joins[0]->wheres[0] === ['type' => 'Column', 'first' => $relation->getQualifiedRelatedKeyName(), 'operator' => '=', 'second' => $relation->getQualifiedRelatedPivotKeyName(), 'boolean' => 'and'];
+            if ($base->wheres || $base->orders || $base->limit || $base->offset || $base->groups || $base->havings || $base->unions || $base->distinct || ($base->columns !== null && $base->columns !== ['*']) || ($joins !== [] && ! $standardJoin)) {
                 throw new LogicException("{$metadata->name}.{$name}: constrained Eloquent relations require a custom query, which is not supported yet.");
             }
             if ($relation instanceof BelongsTo) {
@@ -240,7 +250,13 @@ final class ModelRegistry
             } elseif ($relation instanceof BelongsToMany) {
                 $pivot = $relation->getTable();
                 $keys = [$relation->getForeignPivotKeyName(), $relation->getRelatedPivotKeyName()];
-                $this->pivots[$pivot] = array_values(array_unique(array_merge($this->pivots[$pivot] ?? [], $keys)));
+                $indexes = $model->getConnection()->getSchemaBuilder()->getIndexes($pivot);
+                $primary = array_values(array_filter($indexes, fn ($index) => $index['primary']))[0]['columns'] ?? null;
+                if ($primary === null) {
+                    throw new LogicException("{$metadata->name}.{$name}: the pivot table needs a primary key for Zero.");
+                }
+                $this->pivotKeys[$pivot] = $primary;
+                $this->pivots[$pivot] = array_values(array_unique(array_merge($this->pivots[$pivot] ?? [], $keys, $primary)));
                 $path = [
                     ['source' => [$relation->getParentKeyName()], 'dest' => [$keys[0]], 'table' => $pivot],
                     ['source' => [$keys[1]], 'dest' => [$relation->getRelatedKeyName()], 'table' => $target->table],
