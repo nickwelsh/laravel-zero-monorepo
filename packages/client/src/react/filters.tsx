@@ -15,7 +15,7 @@ import { fail } from '../validation';
 
 export interface FilterControlProps<T> {
     value: T | undefined;
-    onChange: (value: T | undefined) => void;
+    onChange(this: void, value: T | undefined): void;
     name: string;
     label: string;
     disabled?: boolean;
@@ -266,9 +266,15 @@ export function useFilter<
     ];
 }
 
-export function useFilters<S extends Schema, D extends ContractMap, N extends keyof D & string>(
+export function useFilters<
+    S extends Schema,
+    D extends ContractMap,
+    N extends keyof D & string,
+    // oxlint-disable-next-line typescript/no-unnecessary-type-parameters -- Preserve the public tuple generic for wrappers.
+    const Names extends readonly FilterName<D, N>[],
+>(
     model: Model<S, D, N>,
-    names: readonly FilterName<D, N>[],
+    names: Names,
     options: Omit<FilterOptions<unknown>, 'component'> = {},
 ): readonly [readonly Filter<D, N>[], ComponentType] {
     const { group, snapshot } = useBindings(model, names, options);
