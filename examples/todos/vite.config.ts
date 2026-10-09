@@ -28,50 +28,10 @@ export default defineConfig({
             formVariants: true,
         }),
     ]),
+    resolve: { dedupe: ['react', 'react-dom', '@rocicorp/zero'] },
     server: {
         watch: {
-            ignored: [
-                '**/.agents/**',
-                '**/.claude/**',
-                '**/.cursor/**',
-                '**/.junie/**',
-                '**/vendor/**',
-            ],
-        },
-    },
-    lint: {
-        ignorePatterns: [
-            'vendor/**',
-            'node_modules/**',
-            'public/**',
-            'bootstrap/ssr/**',
-            'tailwind.config.js',
-            'resources/js/actions/**',
-            'resources/js/components/ui/*',
-            'resources/js/routes/**',
-            'resources/js/wayfinder/**',
-        ],
-        options: {
-            denyWarnings: true,
-            typeAware: true,
-        },
-    },
-    fmt: {
-        printWidth: 80,
-        tabWidth: 4,
-        singleQuote: true,
-        semi: true,
-        singleAttributePerLine: false,
-        htmlWhitespaceSensitivity: 'css',
-        ignorePatterns: [
-            '.github/**',
-            'composer.json',
-            'resources/js/components/ui/*',
-            'resources/views/mail/*',
-        ],
-        sortTailwindcss: {
-            functions: ['clsx', 'cn', 'cva'],
-            stylesheet: 'resources/css/app.css',
+            ignored: ['**/.agents/**', '**/.claude/**', '**/.cursor/**', '**/.junie/**', '**/vendor/**'],
         },
     },
 });

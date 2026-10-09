@@ -1,5 +1,6 @@
 packages:
   - packages/*
+  - examples/*
 minimumReleaseAgeExclude:
   - '@rocicorp/zero@1.10.0'
 allowBuilds:
@@ -11,3 +12,10 @@ peerDependencyRules:
   allowedVersions:
     '@vitest/mocker>vite': '0.3.3'
     'vitest>vite': '0.3.3'
+    '@rolldown/plugin-babel>vite': '0.3.3'
+    '@vitejs/plugin-react>vite': '0.3.3'
+    'laravel-vite-plugin>vite': '0.3.3'
+    '@inertiajs/vite>vite': '0.3.3'
+    '@tailwindcss/vite>vite': '0.3.3'
+publicHoistPattern:
+  - '@inertiajs/core'
