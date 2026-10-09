@@ -61,7 +61,6 @@ herd secure todos
 herd proxy zero.todos http://127.0.0.1:4858 --secure
 php artisan migrate
 php artisan zero:generate
-php artisan zero:sync-publication
 pnpm build
 composer dev
 ```
@@ -70,7 +69,7 @@ Leave `composer dev` running. It invokes `php artisan dev` and starts Vite, Zero
 the queue listener, and Pail together. Herd serves Laravel over HTTPS, so the default
 Artisan HTTP server is excluded. Stop the command with Ctrl+C to stop its processes.
 No separate frontend or cache terminal is needed. After changing model contracts,
-regenerate; after changing replicated columns, sync the publication too.
+regenerate; the migration hook synchronizes the publication automatically.
 `pnpm zero:dev` remains available for running the cache on its own.
 
 The cache script trusts Herd's local CA with `NODE_EXTRA_CA_CERTS`. Override
@@ -79,6 +78,36 @@ The upstream, CVR, and change databases use the same local PostgreSQL database,
 with separate internal Zero schemas keyed by `todos`; `ZERO_UPSTREAM_SCHEMA=todos_0`
 matches the cache. The replica is stored in ignored `storage/app/zero`.
 The dedicated `laravel_zero_todos` publication contains only the domain tables.
+
+## Migrations and database resets
+
+`zero.sync_publication_on_migrate` is enabled for this application. Successful
+PostgreSQL migration batches synchronize the dedicated publication, including
+`migrate:fresh` and `migrate:refresh`. Ordinary migrations retain the SQLite replica.
+The hook excludes pretend runs, rollbacks, and SQLite test migrations. For manual
+repairs without pending migrations, run `php artisan zero:sync-publication`.
+
+A full database reset needs a fresh Zero replica too. First stop `composer dev`
+with Ctrl+C, then run from `examples/todos`:
+
+```sh
+php artisan migrate:fresh --seed
+php artisan zero:generate
+rm -f storage/app/zero/replica.db*
+composer dev
+```
+
+This resets the local application data and discards only Zero's derived replica
+files (including SQLite sidecars). Zero rebuilds them from PostgreSQL and resyncs
+connected clients. The publication is restored automatically after migrations.
+Use the same replica cleanup if local replication becomes wedged. Never remove
+these files while the cache is running; do not clear them on ordinary migrations.
+
+See [Zero's database reset guidance](https://zero.rocicorp.dev/llms.txt),
+[replication troubleshooting](https://zero.rocicorp.dev/docs/debug/replication), and
+[auto-reset configuration](https://zero.rocicorp.dev/docs/zero-cache-config#auto-reset).
+`ZERO_AUTO_RESET` defaults to true, but reacts to replication-halting errors; it
+is not a replacement for the explicit full-database reset workflow above.
 
 ## Demo accounts
 
