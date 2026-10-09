@@ -8,7 +8,7 @@ import {
   type ComponentType,
   type ReactNode,
 } from "react";
-import type { Schema } from "@rocicorp/zero";
+import type { Schema, ReadonlyJSONValue } from "@rocicorp/zero";
 import type {
   ContractMap,
   Filter,
@@ -36,12 +36,20 @@ export interface FilterOptions<T> {
   component?: ComponentType<FilterControlProps<T>>;
 }
 type AnyControl = ComponentType<FilterControlProps<unknown>>;
-export type FilterControls = Partial<
-  Record<
-    "string" | "number" | "boolean" | "date" | "json" | "belongsTo" | "trashed",
-    AnyControl
-  >
->;
+type ControlValues = {
+  string: string | null;
+  number: number | null;
+  boolean: boolean | null;
+  date: Date | null;
+  json: ReadonlyJSONValue;
+  belongsTo: string | number;
+  trashed: "without" | "with" | "only";
+};
+export type FilterControls = {
+  [K in keyof ControlValues]?: ComponentType<
+    FilterControlProps<ControlValues[K]>
+  >;
+};
 const Config = createContext<FilterControls>({});
 export function FilterProvider({
   controls,
@@ -104,7 +112,10 @@ function binding(
       store.get,
       store.get,
     ).input;
-    const Component = options.component ?? registry[kind] ?? DefaultControl;
+    const Component =
+      options.component ??
+      (registry[kind] as AnyControl | undefined) ??
+      DefaultControl;
     return createElement(Component, {
       value,
       onChange: change,
@@ -286,8 +297,8 @@ export function useFilter<
     {
       model: model.name,
       name,
-      value: snapshot[0]!.query as FilterValue<D, N, F> | undefined,
-    },
+      value: snapshot[0]!.query,
+    } as Filter<D, N, F>,
     group.stores[0]!.Control,
     group.stores[0]!.change,
   ];
@@ -305,11 +316,14 @@ export function useFilters<
 ): readonly [readonly Filter<D, N>[], ComponentType] {
   const { group, snapshot } = useBindings(model, names, options);
   return [
-    names.map((name, i) => ({
-      model: model.name,
-      name,
-      value: snapshot[i]!.query as FilterValue<D, N, typeof name> | undefined,
-    })),
+    names.map(
+      (name, i) =>
+        ({
+          model: model.name,
+          name,
+          value: snapshot[i]!.query,
+        }) as Filter<D, N>,
+    ),
     group.Controls,
   ];
 }

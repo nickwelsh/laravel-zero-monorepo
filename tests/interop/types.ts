@@ -4,6 +4,8 @@ import {
   useData,
   useFilter,
   useMutation,
+  useFilters,
+  type FilterControls,
   type FilterControlProps,
 } from "@laravel-zero/client/react";
 import type { ComponentType } from "react";
@@ -18,7 +20,25 @@ function useContracts() {
   const mutation = useMutation(Task.create());
   mutation({ title: "Hello", completed_at: new Date() });
   const BooleanControl: ComponentType<FilterControlProps<boolean>> = () => null;
+  const SharedBooleanControl: ComponentType<
+    FilterControlProps<boolean | null>
+  > = () => null;
+  const controls: FilterControls = { boolean: SharedBooleanControl };
   useFilter(Task, "done", { component: BooleanControl });
+  Task.query()
+    .all()
+    .filters([
+      { model: "Task", name: "done", value: false },
+      { model: "Task", name: "title", value: "Hello" },
+    ]);
+  const [filters] = useFilters(Task, ["done", "title"]);
+  Task.query().all().filters(filters);
+  Task.query()
+    .all()
+    .filters([
+      // @ts-expect-error filter names and values stay correlated in filter arrays
+      { model: "Task", name: "done", value: "false" },
+    ]);
   // @ts-expect-error wrong custom control value contract
   useFilter(Task, "title", { component: BooleanControl });
   // @ts-expect-error only declared filters are available

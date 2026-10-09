@@ -96,31 +96,37 @@ export type FilterValue<
   D extends ContractMap,
   N extends keyof D,
   F extends FilterName<D, N>,
-> = D[N]["filters"][F]["kind"] extends "trashed"
-  ? "without" | "with" | "only"
-  : D[N]["filters"][F]["kind"] extends "partial"
-    ? string
-    : D[N]["filters"][F]["kind"] extends "belongsTo"
-      ? RecordId<
-          D,
-          RelatedName<
-            D,
-            N,
-            D[N]["filters"][F]["field"] & keyof D[N]["relations"] & string
-          >
-        >
-      : D[N]["filters"][F]["field"] extends keyof D[N]["columns"]
-        ? ColumnValue<D[N]["columns"][D[N]["filters"][F]["field"]]>
-        : never;
+> =
+  F extends FilterName<D, N>
+    ? D[N]["filters"][F]["kind"] extends "trashed"
+      ? "without" | "with" | "only"
+      : D[N]["filters"][F]["kind"] extends "partial"
+        ? string
+        : D[N]["filters"][F]["kind"] extends "belongsTo"
+          ? RecordId<
+              D,
+              RelatedName<
+                D,
+                N,
+                D[N]["filters"][F]["field"] & keyof D[N]["relations"] & string
+              >
+            >
+          : D[N]["filters"][F]["field"] extends keyof D[N]["columns"]
+            ? ColumnValue<D[N]["columns"][D[N]["filters"][F]["field"]]>
+            : never
+    : never;
 export type Filter<
   D extends ContractMap,
   N extends keyof D,
   F extends FilterName<D, N> = FilterName<D, N>,
-> = {
-  readonly model: N;
-  readonly name: F;
-  readonly value: FilterValue<D, N, F> | undefined;
-};
+> =
+  F extends FilterName<D, N>
+    ? {
+        readonly model: N;
+        readonly name: F;
+        readonly value: FilterValue<D, N, F> | undefined;
+      }
+    : never;
 type Writable<
   D extends ContractMap,
   N extends keyof D,
