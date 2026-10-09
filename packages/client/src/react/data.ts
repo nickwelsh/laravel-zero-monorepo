@@ -59,6 +59,9 @@ export function useData<
   const key = selection.key;
   const initial = selection.args.limit ?? selection.contract.defaultLimit;
   const [page, setPage] = useState({ key, identity, limit: initial });
+  if (page.key !== key || page.identity !== identity) {
+    setPage({ key, identity, limit: initial });
+  }
   // A changed query/client uses its initial limit immediately, before effects.
   const limit =
     page.key === key && page.identity === identity ? page.limit : initial;

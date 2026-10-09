@@ -100,6 +100,9 @@ describe("useData", () => {
     expect(native.query.mock.lastCall?.[0].args.limit).toBe(5);
     rerender({ title: "second" });
     expect(native.query.mock.lastCall?.[0].args.limit).toBe(3);
+    rerender({ title: "first" });
+    expect(native.query.mock.lastCall?.[0].args.limit).toBe(3);
+    rerender({ title: "second" });
     act(() => result.current.infinite?.loadMore());
     native.zero = { ...native.zero, context: { user_id: "bob" } };
     rerender({ title: "second" });
