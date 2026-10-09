@@ -7,6 +7,7 @@ import {
   type Transaction,
   type Mutator,
   type MutatorDefinition,
+  type AnyMutatorRegistry,
 } from "@rocicorp/zero";
 import { ulid } from "ulid";
 import { v7 as uuidv7 } from "uuid";
@@ -35,7 +36,10 @@ export type ClientDefaults = {
   now?: () => Date;
   id?: (kind: "uuid" | "ulid", model: ModelContract) => string;
 };
-export type NativeMutators<S extends Schema, D extends ContractMap> = {
+export type NativeMutators<
+  S extends Schema,
+  D extends ContractMap,
+> = AnyMutatorRegistry & {
   [N in keyof D]: {
     [O in D[N]["mutations"][number]]: Mutator<MutationArgs, S, ClientContext>;
   };

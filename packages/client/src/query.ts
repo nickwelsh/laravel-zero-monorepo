@@ -33,6 +33,13 @@ import {
 
 type Table<S extends Schema> = keyof S["tables"] & string;
 type RawRow = Record<string, unknown>;
+type WireRow<T> = T extends Date
+  ? number
+  : T extends readonly (infer V)[]
+    ? readonly WireRow<V>[]
+    : T extends object
+      ? { readonly [K in keyof T]: WireRow<T[K]> }
+      : T;
 type NativeQuery<S extends Schema> = Query<Table<S>, S, RawRow | undefined>;
 export type NativeQueries<S extends Schema, D extends ContractMap> = {
   [N in keyof D]: {
@@ -302,7 +309,7 @@ export class Selection<
     QueryArgs,
     QueryArgs,
     S,
-    RawRow | undefined,
+    One extends true ? WireRow<Row> | undefined : WireRow<Row>,
     ClientContext
   > {
     const operation = this.one ? "one" : "all";
@@ -322,7 +329,14 @@ export class Selection<
       >
     )[operation];
     if (!query) fail("query", "Query is not enabled.");
-    return query(this.args);
+    return query(this.args) as unknown as QueryRequest<
+      Table<S>,
+      QueryArgs,
+      QueryArgs,
+      S,
+      One extends true ? WireRow<Row> | undefined : WireRow<Row>,
+      ClientContext
+    >;
   }
 
   decode(raw: unknown): One extends true ? Row | undefined : readonly Row[] {

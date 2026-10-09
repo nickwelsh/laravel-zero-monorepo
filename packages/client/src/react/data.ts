@@ -72,7 +72,7 @@ export function useData<
       return selection.request();
     return (selection as Selection<S, D, N, Row, false>)
       .limit(requested!)
-      .request();
+      .request() as ReturnType<typeof selection.request>;
   }, [key, requested, identity]);
   const [raw, details] = useQuery(request, options);
   const enabled = options.enabled ?? true;
