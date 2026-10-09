@@ -33,9 +33,7 @@ export default function PasskeyItem({ passkey, onDelete }: Props) {
                 </div>
                 <div className="space-y-1">
                     <div className="flex items-center gap-2.5">
-                        <p className="font-medium tracking-tight">
-                            {passkey.name}
-                        </p>
+                        <p className="font-medium tracking-tight">{passkey.name}</p>
                         {passkey.authenticator && (
                             <span className="inline-flex items-center gap-1 rounded-md bg-muted px-2 py-0.5 text-[11px] font-medium tracking-wide text-muted-foreground uppercase ring-1 ring-border ring-inset">
                                 {passkey.authenticator}
@@ -46,9 +44,7 @@ export default function PasskeyItem({ passkey, onDelete }: Props) {
                         Added {passkey.created_at_diff}
                         {passkey.last_used_at_diff && (
                             <>
-                                <span className="mx-1 text-muted-foreground/50">
-                                    /
-                                </span>
+                                <span className="mx-1 text-muted-foreground/50">/</span>
                                 Last used {passkey.last_used_at_diff}
                             </>
                         )}
@@ -70,19 +66,14 @@ export default function PasskeyItem({ passkey, onDelete }: Props) {
                 <DialogContent>
                     <DialogTitle>Remove passkey</DialogTitle>
                     <DialogDescription>
-                        Are you sure you want to remove the "{passkey.name}"
-                        passkey? You will no longer be able to use it to sign
-                        in.
+                        Are you sure you want to remove the "{passkey.name}" passkey? You will no longer be able to use
+                        it to sign in.
                     </DialogDescription>
                     <DialogFooter className="gap-2">
                         <DialogClose asChild>
                             <Button variant="secondary">Cancel</Button>
                         </DialogClose>
-                        <Button
-                            variant="destructive"
-                            onClick={handleDelete}
-                            disabled={isDeleting}
-                        >
+                        <Button variant="destructive" onClick={handleDelete} disabled={isDeleting}>
                             {isDeleting ? 'Removing...' : 'Remove passkey'}
                         </Button>
                     </DialogFooter>

@@ -14,7 +14,7 @@ export default function PasskeyRegistration({ onSuccess }: Props) {
         const ua = navigator.userAgent;
 
         const browser = [
-            { pattern: /Edg|Edge/, name: 'Edge' },
+            { pattern: /Edg/, name: 'Edge' },
             { pattern: /OPR|Opera|OPiOS/, name: 'Opera' },
             { pattern: /Firefox|FxiOS/, name: 'Firefox' },
             { pattern: /Chrome|CriOS/, name: 'Chrome' },
@@ -57,11 +57,7 @@ export default function PasskeyRegistration({ onSuccess }: Props) {
     };
 
     if (!isSupported) {
-        return (
-            <div className="text-sm text-muted-foreground">
-                Passkeys are not supported in this browser.
-            </div>
-        );
+        return <div className="text-sm text-muted-foreground">Passkeys are not supported in this browser.</div>;
     }
 
     if (!showForm) {
@@ -73,10 +69,7 @@ export default function PasskeyRegistration({ onSuccess }: Props) {
     }
 
     return (
-        <form
-            onSubmit={handleSubmit}
-            className="space-y-4 rounded-lg border border-border bg-muted/50 p-4"
-        >
+        <form onSubmit={handleSubmit} className="space-y-4 rounded-lg border border-border bg-muted/50 p-4">
             <div className="grid gap-2">
                 <Label htmlFor="passkey-name">Passkey name</Label>
                 <Input
@@ -86,11 +79,8 @@ export default function PasskeyRegistration({ onSuccess }: Props) {
                     onChange={(e) => setName(e.target.value)}
                     placeholder="e.g., MacBook Pro, iPhone"
                     className="mt-1 block w-full border-foreground/20"
-                    autoFocus
                 />
-                <p className="text-xs text-muted-foreground">
-                    A name helps you identify this passkey later.
-                </p>
+                <p className="text-xs text-muted-foreground">A name helps you identify this passkey later.</p>
             </div>
 
             {error && <InputError message={error} />}

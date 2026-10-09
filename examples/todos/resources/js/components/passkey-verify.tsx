@@ -17,12 +17,7 @@ type Props = {
     separator?: string;
 };
 
-export default function PasskeyVerify({
-    routes,
-    label,
-    loadingLabel,
-    separator,
-}: Props = {}) {
+export default function PasskeyVerify({ routes, label, loadingLabel, separator }: Props = {}) {
     const { verify, isLoading, error, isSupported } = usePasskeyVerify({
         ...(routes && {
             routes: {
@@ -42,21 +37,11 @@ export default function PasskeyVerify({
     return (
         <>
             <div className="grid gap-2">
-                <Button
-                    type="button"
-                    variant="outline"
-                    className="w-full"
-                    onClick={verify}
-                    disabled={isLoading}
-                >
+                <Button type="button" variant="outline" className="w-full" onClick={verify} disabled={isLoading}>
                     {isLoading ? <Spinner /> : <KeyRound className="h-4 w-4" />}
-                    {isLoading
-                        ? (loadingLabel ?? 'Authenticating...')
-                        : (label ?? 'Sign in with a passkey')}
+                    {isLoading ? (loadingLabel ?? 'Authenticating...') : (label ?? 'Sign in with a passkey')}
                 </Button>
-                {error && (
-                    <InputError message={error} className="text-center" />
-                )}
+                {error && <InputError message={error} className="text-center" />}
             </div>
 
             <div className="relative my-6">

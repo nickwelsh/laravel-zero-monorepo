@@ -13,12 +13,7 @@ export default function PasswordInput({
 
     return (
         <div className="relative">
-            <Input
-                type={showPassword ? 'text' : 'password'}
-                className={cn('pr-10', className)}
-                ref={ref}
-                {...props}
-            />
+            <Input type={showPassword ? 'text' : 'password'} className={cn('pr-10', className)} ref={ref} {...props} />
             <button
                 type="button"
                 onClick={() => setShowPassword((prev) => !prev)}
@@ -26,11 +21,7 @@ export default function PasswordInput({
                 aria-label={showPassword ? 'Hide password' : 'Show password'}
                 tabIndex={-1}
             >
-                {showPassword ? (
-                    <EyeOff className="size-4" />
-                ) : (
-                    <Eye className="size-4" />
-                )}
+                {showPassword ? <EyeOff className="size-4" /> : <Eye className="size-4" />}
             </button>
         </div>
     );

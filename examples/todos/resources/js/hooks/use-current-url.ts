@@ -30,9 +30,7 @@ export function useCurrentUrl(): UseCurrentUrlReturn {
     const page = usePage();
     const currentUrlPath = new URL(
         page.url,
-        typeof window !== 'undefined'
-            ? window.location.origin
-            : 'http://localhost',
+        typeof window !== 'undefined' ? window.location.origin : 'http://localhost',
     ).pathname;
 
     const isCurrentUrl: IsCurrentUrlFn = (
