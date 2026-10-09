@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { execFileSync } from "node:child_process";
 import { handleQueryRequest } from "@rocicorp/zero/server";
-import { schema, queries, definitions } from "./generated";
+import { schema, queries } from "./generated";
 import type { QueryArgs } from "@laravel-zero/client";
 
 describe("PHP / native Zero query equivalence", () => {
@@ -31,7 +31,7 @@ describe("PHP / native Zero query equivalence", () => {
         query: {},
         userID: "alice",
         handler: (name, args) => {
-          const [model, operation] = name.split(".");
+          const operation = name.split(".")[1];
           return queries.Task[operation as "all" | "one"].fn({
             args: args as QueryArgs,
             ctx: { user_id: "alice" },
@@ -40,8 +40,8 @@ describe("PHP / native Zero query equivalence", () => {
       });
       const php = JSON.parse(
         execFileSync(
-          "rtk",
-          ["php", "tests/interop/export.php", name, JSON.stringify(args)],
+          "php",
+          ["tests/interop/export.php", name, JSON.stringify(args)],
           { encoding: "utf8" },
         ),
       );
