@@ -23,6 +23,11 @@ abstract class TestCase extends Orchestra
     protected function setUp(): void
     {
         parent::setUp();
+        $this->createTables();
+    }
+
+    protected function createTables(): void
+    {
         Schema::create('tasks', function (Blueprint $table) {
             $table->uuid('id')->primary();
             $table->string('user_id');

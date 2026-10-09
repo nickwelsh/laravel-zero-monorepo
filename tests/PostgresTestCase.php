@@ -7,6 +7,23 @@ use Illuminate\Support\Facades\Schema;
 
 abstract class PostgresTestCase extends TestCase
 {
+    private bool $ownsTables = false;
+
+    protected function createTables(): void
+    {
+        $name = DB::selectOne('SELECT current_database() AS name')->name;
+        if (! preg_match('/^laravel_zero_test(?:_[a-z0-9_]+)?$/D', $name)) {
+            throw new \LogicException('PostgreSQL tests require a disposable database named laravel_zero_test (or laravel_zero_test_*).');
+        }
+        if (DB::selectOne("SELECT to_regnamespace('zero_test_0') AS name")->name !== null ||
+            DB::select("SELECT tablename FROM pg_tables WHERE schemaname = 'public'") !== [] ||
+            DB::select("SELECT pubname FROM pg_publication WHERE pubname = 'laravel_zero_test_publication'") !== []) {
+            throw new \LogicException('Refusing to use a PostgreSQL test database containing existing application tables, test bookkeeping, or a test publication.');
+        }
+        $this->ownsTables = true;
+        parent::createTables();
+    }
+
     protected function defineEnvironment($app): void
     {
         $app['config']->set('database.default', 'testing');
@@ -33,7 +50,7 @@ abstract class PostgresTestCase extends TestCase
 
     protected function tearDown(): void
     {
-        if (isset($this->app) && $this->app !== null) {
+        if ($this->ownsTables && isset($this->app) && $this->app !== null) {
             DB::statement('DROP SCHEMA IF EXISTS zero_test_0 CASCADE');
             Schema::dropIfExists('tasks');
             Schema::dropIfExists('lists');
