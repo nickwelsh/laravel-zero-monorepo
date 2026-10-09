@@ -44,7 +44,7 @@ XDEBUG_MODE=coverage pnpm php:test:coverage
 Frontend reports go to `coverage/client`; PHP reports go to
 `packages/laravel/coverage`. PHP needs Xdebug or PCOV. Include PostgreSQL when
 measuring the full suite. CI saves both reports. There is no artificial 100%
-coverage or type-coverage gate; behavior tests and level-6 analysis are required.
+coverage or type-coverage gate; behavior tests and level-10 analysis are required.
 
 ## Adaptations from the application configs
 
@@ -81,7 +81,7 @@ coverage or type-coverage gate; behavior tests and level-6 analysis are required
   obstruct package extension, Eloquent fixtures and Testbench overrides.
   `mb_str_functions` is disabled because filesystem offsets and protocol lengths
   intentionally use byte semantics. TestCase is formatted instead of excluded.
-- **PHPStan runs at level 6 on source and tests without a baseline.** PHPDoc types
+- **PHPStan runs at level 10 on source and tests without a baseline.** PHPDoc types
   are not assumed certain, preserving runtime validation for untyped consumers.
   Pest 4 closure bindings are explicitly documented in the tests.
 - **Pest 5 PHPStan/Rector plugins are omitted:** their available releases require
