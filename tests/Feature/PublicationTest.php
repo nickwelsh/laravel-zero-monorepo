@@ -9,6 +9,23 @@ use LaravelZero\Tests\PostgresTestCase;
 
 class PublicationTest extends PostgresTestCase
 {
+    public function test_does_not_reuse_native_zeros_reserved_publication_names(): void
+    {
+        $this->expectException(\LogicException::class);
+        (new PublicationManager(new ModelRegistry($this->models())))->plan('_zero_public_0');
+    }
+
+    public function test_does_not_reuse_a_publication_of_an_entire_schema(): void
+    {
+        DB::statement('CREATE PUBLICATION laravel_zero_test_publication FOR TABLES IN SCHEMA public');
+        try {
+            $this->expectException(\LogicException::class);
+            (new PublicationManager(new ModelRegistry($this->models())))->sync('laravel_zero_test_publication');
+        } finally {
+            DB::statement('DROP PUBLICATION laravel_zero_test_publication');
+        }
+    }
+
     public function test_refuses_models_resolved_through_another_postgres_schema(): void
     {
         DB::statement('CREATE SCHEMA tenant');

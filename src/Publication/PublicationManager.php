@@ -15,12 +15,13 @@ final readonly class PublicationManager
         if ($connection->getDriverName() !== 'pgsql' || (int) $connection->selectOne('SHOW server_version_num')->server_version_num < 150000) {
             throw new LogicException('Zero publications require PostgreSQL 15 or later.');
         }
-        if (! preg_match('/^[A-Za-z_][A-Za-z0-9_]*$/D', $name)) {
-            throw new LogicException('Invalid publication identifier.');
+        if (! preg_match('/^[A-Za-z][A-Za-z0-9_]*$/D', $name)) {
+            throw new LogicException('Invalid publication identifier; underscore prefixes are reserved by Zero.');
         }
         $existing = $connection->selectOne('SELECT puballtables FROM pg_publication WHERE pubname = ?', [$name]);
-        if ($existing?->puballtables) {
-            throw new LogicException('Cannot restrict a publication that publishes all tables. Choose a dedicated Zero publication.');
+        $schemaWide = $existing !== null && $connection->selectOne('SELECT 1 FROM pg_publication_namespace n JOIN pg_publication p ON p.oid = n.pnpubid WHERE p.pubname = ?', [$name]) !== null;
+        if ($existing?->puballtables || $schemaWide) {
+            throw new LogicException('Cannot restrict a publication that publishes all tables or an entire schema. Choose a dedicated Zero publication.');
         }
         $plan = [];
         $publication = $this->quote($name);
