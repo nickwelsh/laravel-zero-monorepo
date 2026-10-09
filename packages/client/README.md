@@ -5,12 +5,12 @@ Requires the matching `nickwelsh/laravel-zero` Composer package and
 `@rocicorp/zero` **1.10.0**. React 18/19 is an optional peer dependency.
 
 ```ts
-import { Task } from "./zero/generated";
-import { useData, useMutation } from "@laravel-zero/client/react";
+import { Task } from './zero/generated';
+import { useData, useMutation } from '@laravel-zero/client/react';
 
 const data = useData(Task.query().all());
 const create = useMutation(Task.create());
-create({ title: "Hello" });
+create({ title: 'Hello' });
 ```
 
 Use these hooks inside Zero's `ZeroProvider`. The root export is framework

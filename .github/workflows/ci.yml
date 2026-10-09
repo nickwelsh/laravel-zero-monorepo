@@ -14,15 +14,15 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - php: "8.3"
-            laravel: "^12.0"
-            testbench: "^10.0"
-          - php: "8.3"
-            laravel: "^13.0"
-            testbench: "^11.0"
-          - php: "8.5"
-            laravel: "^13.0"
-            testbench: "^11.0"
+          - php: '8.3'
+            laravel: '^12.0'
+            testbench: '^10.0'
+          - php: '8.3'
+            laravel: '^13.0'
+            testbench: '^11.0'
+          - php: '8.5'
+            laravel: '^13.0'
+            testbench: '^11.0'
     services:
       postgres:
         image: postgres:16
@@ -51,7 +51,7 @@ jobs:
       - uses: pnpm/action-setup@v4
       - uses: actions/setup-node@v4
         with:
-          node-version: "24"
+          node-version: '24'
           cache: pnpm
       - run: composer --working-dir=packages/laravel validate --strict
       - run: composer --working-dir=packages/laravel update --with 'laravel/framework:${{ matrix.laravel }}' --with 'orchestra/testbench:${{ matrix.testbench }}' --no-interaction --prefer-dist

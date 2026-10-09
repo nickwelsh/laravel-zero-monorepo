@@ -22,9 +22,7 @@ a Composer path repository pointing to its absolute path and require the dev pac
 
 ```json
 {
-  "repositories": [
-    { "type": "path", "url": "../laravel-zero/packages/laravel", "options": { "symlink": true } }
-  ]
+    "repositories": [{ "type": "path", "url": "../laravel-zero/packages/laravel", "options": { "symlink": true } }]
 }
 ```
 
@@ -266,24 +264,24 @@ enabled so server context changes are reevaluated.
 Create one Zero instance per authenticated user/tenant lifecycle and provide it:
 
 ```tsx
-import { Zero } from "@rocicorp/zero";
-import type { ClientContext } from "@laravel-zero/client";
-import { ZeroProvider } from "@laravel-zero/client/react";
-import { schema, mutators } from "./zero/generated";
+import { Zero } from '@rocicorp/zero';
+import type { ClientContext } from '@laravel-zero/client';
+import { ZeroProvider } from '@laravel-zero/client/react';
+import { schema, mutators } from './zero/generated';
 
 const zero = new Zero<typeof schema, undefined, ClientContext>({
-  schema,
-  mutators,
-  userID: String(user.id),
-  context: { user_id: user.id },
-  cacheURL: "http://localhost:4848",
-  queryURL: "http://localhost:8000/zero/query",
-  mutateURL: "http://localhost:8000/zero/mutate",
+    schema,
+    mutators,
+    userID: String(user.id),
+    context: { user_id: user.id },
+    cacheURL: 'http://localhost:4848',
+    queryURL: 'http://localhost:8000/zero/query',
+    mutateURL: 'http://localhost:8000/zero/mutate',
 });
 
 // Inside your application root:
 <ZeroProvider zero={zero}>
-  <App />
+    <App />
 </ZeroProvider>;
 ```
 
@@ -293,36 +291,28 @@ and remount the provider subtree. Do not reuse a client by mutating its context.
 Pass the trusted tenant value in local context when using tenant authorization.
 
 ```tsx
-import { useData, useFilter, useMutation } from "@laravel-zero/client/react";
-import { Task } from "./zero/generated";
+import { useData, useFilter, useMutation } from '@laravel-zero/client/react';
+import { Task } from './zero/generated';
 
 function Tasks() {
-  const [title, TitleFilter] = useFilter(Task, "title", { debounceMs: 150 });
-  const tasks = useData(
-    Task.query().all().with("list").filter(title).infinite(50),
-  );
-  const create = useMutation(Task.create());
+    const [title, TitleFilter] = useFilter(Task, 'title', { debounceMs: 150 });
+    const tasks = useData(Task.query().all().with('list').filter(title).infinite(50));
+    const create = useMutation(Task.create());
 
-  return (
-    <>
-      <TitleFilter label="Search tasks" />
-      <button
-        disabled={create.state.status === "pending"}
-        onClick={() => create({ title: "Hello" })}
-      >
-        Add task
-      </button>
-      {tasks.data.map((task) => (
-        <p key={task.id}>{task.title}</p>
-      ))}
-      <button
-        disabled={tasks.infinite?.hasMore !== true}
-        onClick={() => tasks.infinite?.loadMore()}
-      >
-        Load more
-      </button>
-    </>
-  );
+    return (
+        <>
+            <TitleFilter label="Search tasks" />
+            <button disabled={create.state.status === 'pending'} onClick={() => create({ title: 'Hello' })}>
+                Add task
+            </button>
+            {tasks.data.map((task) => (
+                <p key={task.id}>{task.title}</p>
+            ))}
+            <button disabled={tasks.infinite?.hasMore !== true} onClick={() => tasks.infinite?.loadMore()}>
+                Load more
+            </button>
+        </>
+    );
 }
 ```
 
@@ -338,16 +328,16 @@ Connection state remains separate. `render()` accepts the six matching handlers:
 Other query examples:
 
 ```ts
-Task.query().one(id).with("list"); // Row | undefined, including visibility-filtered relations.
-Task.query().all().orderBy("title").limit(25);
+Task.query().one(id).with('list'); // Row | undefined, including visibility-filtered relations.
+Task.query().all().orderBy('title').limit(25);
 Task.query().all().withTrashed();
 Task.query().all().onlyTrashed();
 // If a declared direct to-many relation is named comments:
-Task.query().all().with("comments", 5);
+Task.query().all().with('comments', 5);
 // If list declares a tasks include:
 Task.query()
-  .all()
-  .with("list", (list) => list.with("tasks", 5));
+    .all()
+    .with('list', (list) => list.with('tasks', 5));
 ```
 
 Builders are immutable and track included result shapes. Singular queries allow
