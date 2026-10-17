@@ -1,6 +1,6 @@
 import { definitions, schema } from './generated';
-import { createLaravelZero } from '@laravel-zero/client';
-import type { ClientDefaults } from '@laravel-zero/client';
+import { createLaravelZero } from '@nickwelsh/laravel-zero';
+import type { ClientDefaults } from '@nickwelsh/laravel-zero';
 
 // Exercise nested-only models against the actual PHP-generated tables and columns.
 export const nestedDefinitions = {

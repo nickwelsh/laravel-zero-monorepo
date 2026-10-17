@@ -1,4 +1,4 @@
-import type { ProviderOptions } from '@laravel-zero/client/react';
+import type { ProviderOptions } from '@nickwelsh/laravel-zero/react';
 
 const origin = import.meta.env.VITE_APP_URL;
 export const options = {

@@ -5,7 +5,7 @@
     "scripts": {
         "test": "vp test run",
         "typecheck": "tsc --noEmit && pnpm docs:typecheck",
-        "build": "pnpm --filter @laravel-zero/client build && pnpm docs:build",
+        "build": "pnpm --filter @nickwelsh/laravel-zero build && pnpm docs:build",
         "docs:dev": "pnpm --filter @laravel-zero/docs dev",
         "docs:build": "pnpm --filter @laravel-zero/docs build",
         "docs:start": "pnpm --filter @laravel-zero/docs start",

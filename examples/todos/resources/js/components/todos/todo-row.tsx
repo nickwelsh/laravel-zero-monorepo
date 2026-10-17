@@ -1,4 +1,4 @@
-import { useMutation } from '@laravel-zero/client/react';
+import { useMutation } from '@nickwelsh/laravel-zero/react';
 import { Pencil, Trash2 } from 'lucide-react';
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';

@@ -7,7 +7,7 @@ Laravel authenticates reads and authorizes writes; Zero owns replication, local
 subscriptions, optimistic replay, and reconciliation.
 
 This monorepo contains `nickwelsh/laravel-zero` in `packages/laravel` and
-`@laravel-zero/client` in `packages/client`. The client has a framework-independent
+`@nickwelsh/laravel-zero` in `packages/client`. The client has a framework-independent
 core and a separate `/react` export. Both target **Zero 1.10.0**.
 
 ## Requirements and local installation
@@ -38,12 +38,12 @@ tarball in your app:
 composer --working-dir=packages/laravel install
 pnpm install --frozen-lockfile
 pnpm build
-pnpm --filter @laravel-zero/client pack --pack-destination /tmp/laravel-zero-pack
+pnpm --filter @nickwelsh/laravel-zero pack --pack-destination /tmp/laravel-zero-pack
 ```
 
 ```sh
 # From your Laravel app:
-pnpm add /tmp/laravel-zero-pack/laravel-zero-client-0.1.0.tgz @rocicorp/zero@1.10.0
+pnpm add /tmp/laravel-zero-pack/nickwelsh-laravel-zero-0.1.0.tgz @rocicorp/zero@1.10.0
 ```
 
 Laravel discovers the service provider automatically. The default model discovery
@@ -330,7 +330,7 @@ The generic native `ZeroProvider` remains available from the React package for
 applications that manage Zero themselves.
 
 ```tsx
-import { useData, useFilter, useMutation } from '@laravel-zero/client/react';
+import { useData, useFilter, useMutation } from '@nickwelsh/laravel-zero/react';
 import { Task } from './zero/generated';
 
 function Tasks() {

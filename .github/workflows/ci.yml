@@ -83,7 +83,7 @@ jobs:
         with:
           name: example-imports
           path: examples/todos/resources/js
-      - run: pnpm --filter @laravel-zero/client build
+      - run: pnpm --filter @nickwelsh/laravel-zero build
       - run: pnpm check
       - run: pnpm --filter @laravel-zero/docs deploy:check
       - run: pnpm test:coverage

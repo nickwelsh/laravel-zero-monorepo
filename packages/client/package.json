@@ -1,15 +1,15 @@
 {
-    "name": "@laravel-zero/client",
+    "name": "@nickwelsh/laravel-zero",
     "version": "0.1.0",
     "description": "Generated Laravel model contracts and React bindings for Zero.",
     "homepage": "https://docs.nickwelsh.me/laravel-zero/",
     "bugs": {
-        "url": "https://github.com/nickwelsh/laravel-zero/issues"
+        "url": "https://github.com/nickwelsh/laravel-zero-monorepo/issues"
     },
     "license": "MIT",
     "repository": {
         "type": "git",
-        "url": "git+https://github.com/nickwelsh/laravel-zero.git",
+        "url": "git+https://github.com/nickwelsh/laravel-zero-monorepo.git",
         "directory": "packages/client"
     },
     "files": [

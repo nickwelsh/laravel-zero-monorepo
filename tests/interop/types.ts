@@ -1,7 +1,7 @@
 import { Task, TaskList, schema, definitions } from './generated';
 import { nestedRuntime, nestedDefinitions } from './nested';
-import { createLaravelZero } from '@laravel-zero/client';
-import type { SelectionData } from '@laravel-zero/client';
+import { createLaravelZero } from '@nickwelsh/laravel-zero';
+import type { SelectionData } from '@nickwelsh/laravel-zero';
 import {
     useData,
     useFilter,
@@ -9,7 +9,7 @@ import {
     useFilters,
     type FilterControls,
     type FilterControlProps,
-} from '@laravel-zero/client/react';
+} from '@nickwelsh/laravel-zero/react';
 import type { ComponentType } from 'react';
 
 // Compiled by typecheck; these are public-contract checks, not runtime tests.
@@ -109,7 +109,7 @@ function useBoundContracts() {
     return { defaults, name };
 }
 
-declare module '@laravel-zero/client' {
+declare module '@nickwelsh/laravel-zero' {
     interface ModelTypes {
         Task: { preferences: { theme: 'light' | 'dark' } };
     }

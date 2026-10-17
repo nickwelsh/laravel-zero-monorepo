@@ -12,8 +12,8 @@
         "esModuleInterop": true,
         "types": ["node", "vite-plus/test/globals"],
         "paths": {
-            "@laravel-zero/client": ["./packages/client/src/index.ts"],
-            "@laravel-zero/client/react": ["./packages/client/src/react/index.ts"]
+            "@nickwelsh/laravel-zero": ["./packages/client/src/index.ts"],
+            "@nickwelsh/laravel-zero/react": ["./packages/client/src/react/index.ts"]
         }
     },
     "include": ["packages", "tests/interop", "vite.config.ts"]

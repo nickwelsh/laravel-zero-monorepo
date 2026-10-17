@@ -3,7 +3,7 @@ import { defineConfig } from '@nickwelsh/docs-base';
 export default defineConfig({
     name: 'Laravel Zero',
     origin: 'https://docs.nickwelsh.me',
-    githubUrl: 'https://github.com/nickwelsh/laravel-zero',
+    githubUrl: 'https://github.com/nickwelsh/laravel-zero-monorepo',
     githubBranch: 'main',
     basePath: '/laravel-zero',
     content: './content/docs',
