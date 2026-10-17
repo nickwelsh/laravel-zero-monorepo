@@ -46,10 +46,10 @@ The existing proxied DNS record for `docs.nickwelsh.me` must remain in place.
 
 Create the GitHub environment `docs` and set:
 
-| Setting                 | Type                 | Value                                  |
-| ----------------------- | -------------------- | -------------------------------------- |
-| `CLOUDFLARE_API_TOKEN`  | Environment secret   | Cloudflare deployment token            |
-| `CLOUDFLARE_ACCOUNT_ID` | Environment variable | Account containing the Worker and zone |
+| Setting                 | Type               | Value                                  |
+| ----------------------- | ------------------ | -------------------------------------- |
+| `CLOUDFLARE_API_TOKEN`  | Environment secret | Cloudflare deployment token            |
+| `CLOUDFLARE_ACCOUNT_ID` | Environment secret | Account containing the Worker and zone |
 
 For the first deployment, set the token's Workers **default permissions to Admin**
 at the product scope: creating a Worker requires Admin and cannot be granted to a
