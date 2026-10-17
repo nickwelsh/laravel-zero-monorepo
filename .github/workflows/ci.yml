@@ -9,7 +9,27 @@ permissions:
   contents: read
 
 jobs:
+  example-imports:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.5'
+          extensions: pdo_sqlite, mbstring
+          coverage: none
+      - run: composer --working-dir=examples/todos install --no-dev --no-interaction --prefer-dist
+      - run: php examples/todos/artisan wayfinder:generate --with-form
+      - uses: actions/upload-artifact@v4
+        with:
+          name: example-imports
+          path: |
+            examples/todos/resources/js/actions
+            examples/todos/resources/js/routes
+            examples/todos/resources/js/wayfinder
+
   verify:
+    needs: example-imports
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
@@ -57,11 +77,11 @@ jobs:
       - run: composer --working-dir=packages/laravel validate --strict
       - run: composer --working-dir=packages/laravel update --with 'laravel/framework:${{ matrix.laravel }}' --with 'orchestra/testbench:${{ matrix.testbench }}' --no-interaction --prefer-dist
       - run: pnpm install --frozen-lockfile
-      - name: Prepare example imports for workspace linting
-        run: |
-          pnpm --filter @laravel-zero/client build
-          composer --working-dir=examples/todos install --no-dev --no-interaction --prefer-dist
-          php examples/todos/artisan wayfinder:generate --with-form
+      - uses: actions/download-artifact@v4
+        with:
+          name: example-imports
+          path: examples/todos/resources/js
+      - run: pnpm --filter @laravel-zero/client build
       - run: pnpm check
       - run: pnpm --filter @laravel-zero/docs deploy:check
       - run: pnpm test:coverage
