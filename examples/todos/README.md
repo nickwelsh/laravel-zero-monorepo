@@ -13,7 +13,7 @@ live queries/optimistic CRUD. It consumes the local Composer package in
 
 ## Requirements
 
-Use Herd, PHP 8.4+, Node 24+, pnpm 11, and PostgreSQL 15+ with logical replication
+Use Herd, PHP 8.4.1+, Node 24+, pnpm 11, and PostgreSQL 15+ with logical replication
 (`wal_level=logical`) and replication privileges for the local database user.
 The example uses Pest 5; the library itself supports PHP 8.3 with Laravel 12.
 

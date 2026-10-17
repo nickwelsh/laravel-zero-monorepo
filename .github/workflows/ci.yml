@@ -12,7 +12,7 @@ jobs:
   example-imports:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - uses: shivammathur/setup-php@v2
         with:
           php-version: '8.5'
@@ -20,7 +20,7 @@ jobs:
           coverage: none
       - run: composer --working-dir=examples/todos install --no-dev --no-interaction --prefer-dist
       - run: php examples/todos/artisan wayfinder:generate --with-form
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         with:
           name: example-imports
           path: |
@@ -63,7 +63,7 @@ jobs:
       ZERO_TEST_PG_USER: postgres
       ZERO_TEST_PG_PASSWORD: postgres
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - name: Install spelling checker
         run: sudo apt-get update && sudo apt-get install --yes aspell aspell-en
       - uses: shivammathur/setup-php@v2
@@ -71,15 +71,15 @@ jobs:
           php-version: ${{ matrix.php }}
           extensions: pdo_sqlite, pdo_pgsql, mbstring
           coverage: ${{ matrix.php == '8.3' && matrix.laravel == '^13.0' && 'xdebug' || 'none' }}
-      - uses: pnpm/action-setup@v4
-      - uses: actions/setup-node@v4
+      - uses: pnpm/action-setup@v6
+      - uses: actions/setup-node@v7
         with:
           node-version: '24'
           cache: pnpm
       - run: composer --working-dir=packages/laravel validate --strict
       - run: composer --working-dir=packages/laravel update --with 'laravel/framework:${{ matrix.laravel }}' --with 'orchestra/testbench:${{ matrix.testbench }}' --no-interaction --prefer-dist
       - run: pnpm install --frozen-lockfile
-      - uses: actions/download-artifact@v4
+      - uses: actions/download-artifact@v8
         with:
           name: example-imports
           path: examples/todos/resources/js
@@ -92,7 +92,7 @@ jobs:
         if: matrix.php == '8.3' && matrix.laravel == '^13.0'
         env:
           XDEBUG_MODE: coverage
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         if: matrix.php == '8.3' && matrix.laravel == '^13.0'
         with:
           name: coverage
