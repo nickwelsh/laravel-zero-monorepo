@@ -13,6 +13,8 @@ import {
 import type { ComponentType } from 'react';
 
 // Compiled by typecheck; these are public-contract checks, not runtime tests.
+const fixtureDate = new Date('2026-01-01T00:00:00Z');
+
 function useContracts() {
     const selection = Task.query().all().with('list');
     const data = useData(selection);
@@ -22,7 +24,7 @@ function useContracts() {
     const one = useData(Task.query().one('id').with('list'));
     const title: string | undefined = one.data?.data.title;
     const mutation = useMutation(Task.create());
-    mutation({ title: 'Hello', completed_at: new Date() });
+    mutation({ title: 'Hello', completed_at: fixtureDate });
     const BooleanControl: ComponentType<FilterControlProps<boolean>> = () => null;
     const SharedBooleanControl: ComponentType<FilterControlProps<boolean | null>> = () => null;
     const controls: FilterControls = { boolean: SharedBooleanControl };
@@ -94,7 +96,7 @@ function useContracts() {
 function useBoundContracts() {
     const task = useData(Task.query().all().with('list')).data[0]!;
     const update = useMutation(task.update());
-    update({ completed_at: new Date() });
+    update({ completed_at: fixtureDate });
     update.form.setValue('title', 'Changed');
     const defaults: string | undefined = update.defaultValues.title;
     const list = useData(task.list);
@@ -129,7 +131,7 @@ function useDtoContracts() {
     task.update().prepare({ preferences: { theme: 'dark' } });
     // @ts-expect-error DTO field types refine mutation inputs as well as result data
     task.update().prepare({ preferences: { theme: 'unknown' } });
-    Task.query.all().filter({ model: 'Task', name: 'completed_after', value: new Date() });
+    Task.query.all().filter({ model: 'Task', name: 'completed_after', value: fixtureDate });
     Task.query.all().filter({ model: 'Task', name: 'title_operator', value: { operator: '!=', value: 'hidden' } });
     // @ts-expect-error dynamic operators retain the column's value type
     Task.query.all().filter({ model: 'Task', name: 'title_operator', value: { operator: '!=', value: 1 } });
