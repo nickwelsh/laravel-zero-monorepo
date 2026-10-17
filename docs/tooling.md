@@ -22,10 +22,10 @@ GitHub Release is published. It runs CI before publishing, builds the package,
 checks exports, and publishes with npm provenance using OIDC. No `NPM_TOKEN` or
 `NODE_AUTH_TOKEN` secret is required.
 
-The bootstrap submission contains only `package.json` and requests version
-`0.0.0-placeholder.0` under the `bootstrap` dist-tag. npm currently exposes its
-temporary `0.0.0-stage` placeholder for the new package. It exists to configure
-trusted publishing; it is not an installable client release.
+The bootstrap package `@laravel-zero/client@0.0.0-placeholder.0` contains only
+`package.json` and uses the `bootstrap` dist-tag. It exists to configure trusted
+publishing; it is not an installable client release. npm also assigned `latest`
+to this first version; the first real release will replace that tag.
 
 Create the GitHub environment `npm`. In the npm package's trusted-publisher
 settings, choose GitHub Actions and use these exact values:
