@@ -4,7 +4,7 @@ import { checkWorkflow } from './check-workflows.mjs';
 
 const sha = '0123456789abcdef0123456789abcdef01234567';
 
-test('accepts immutable actions, action subpaths, reusable workflows, and local references', () => {
+await test('accepts immutable actions, action subpaths, reusable workflows, and local references', () => {
     assert.deepEqual(
         checkWorkflow(`
 jobs:
@@ -24,7 +24,7 @@ jobs:
     );
 });
 
-test('rejects mutable tags, branches, short SHAs, expressions, and missing references', () => {
+await test('rejects mutable tags, branches, short SHAs, expressions, and missing references', () => {
     for (const reference of [
         'owner/action@v7',
         'owner/action@main',
@@ -38,13 +38,13 @@ test('rejects mutable tags, branches, short SHAs, expressions, and missing refer
     }
 });
 
-test('rejects mutable reusable workflows', () => {
+await test('rejects mutable reusable workflows', () => {
     const errors = checkWorkflow('jobs: { verify: { uses: owner/repo/.github/workflows/ci.yml@main } }');
     assert.equal(errors.length, 1);
     assert.match(errors[0], /jobs\.verify\.uses/u);
 });
 
-test('checks YAML aliases and quoted or folded uses values', () => {
+await test('checks YAML aliases and quoted or folded uses values', () => {
     const errors = checkWorkflow(`
 jobs:
   build:
@@ -57,7 +57,7 @@ jobs:
     assert.equal(errors.length, 3);
 });
 
-test('fails closed on invalid YAML and duplicate keys', () => {
+await test('fails closed on invalid YAML and duplicate keys', () => {
     assert.throws(() => checkWorkflow('jobs: ['));
     assert.throws(() => checkWorkflow('jobs: { build: { uses: ./local, uses: owner/action@v7 } }'));
 });
