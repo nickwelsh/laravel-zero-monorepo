@@ -1,0 +1,19 @@
+{
+    "title": "Guides",
+    "root": "section",
+    "pages": [
+        "index",
+        "getting-started",
+        "models",
+        "authorization",
+        "queries",
+        "react",
+        "mutations",
+        "nested-mutations",
+        "records-and-casts",
+        "replication",
+        "configuration",
+        "constraints",
+        "development"
+    ]
+}

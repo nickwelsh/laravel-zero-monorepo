@@ -1,0 +1,56 @@
+---
+title: Getting started
+description: Install Laravel Zero locally and connect your first model to Zero.
+---
+
+- PHP 8.3+, Laravel 12 or 13, and the PDO PostgreSQL extension.
+- PostgreSQL 15+ with logical replication configured for Zero.
+- Zero cache 1.10.0, the matching npm client, and React 18 or 19 for React bindings.
+- Node 24+ and pnpm 11 for developing this monorepo.
+
+The packages have not been published. To use this checkout in a Laravel app, add
+a Composer path repository pointing to its absolute path and require the dev package:
+
+```json
+{
+    "repositories": [{ "type": "path", "url": "../laravel-zero/packages/laravel", "options": { "symlink": true } }]
+}
+```
+
+```sh
+composer require nickwelsh/laravel-zero:@dev
+php artisan vendor:publish --tag=zero-config
+```
+
+Build and pack the npm package from this repository, then install the resulting
+tarball in your app:
+
+```sh
+composer --working-dir=packages/laravel install
+pnpm install --frozen-lockfile
+pnpm build
+pnpm --filter @laravel-zero/client pack --pack-destination /tmp/laravel-zero-pack
+```
+
+```sh
+# From your Laravel app:
+pnpm add /tmp/laravel-zero-pack/laravel-zero-client-0.1.0.tgz @rocicorp/zero@1.10.0
+```
+
+Laravel discovers the service provider automatically. The default model discovery
+scans classes with Zero attributes or a `zero()` definition under `app/Models`. Alternatively, list every participating
+model in `config/zero.php`, including relationship targets:
+
+```php
+'models' => [App\Models\Task::class, App\Models\TaskList::class],
+```
+
+## Next steps
+
+1. [Define a model](./models.mdx) and create its PostgreSQL migration.
+2. [Configure visibility, policies, and validation](./authorization.mdx).
+3. [Generate contracts and restrict replication](./replication.mdx).
+4. [Connect React](./react.mdx) and subscribe to a live query.
+
+The [shared todos example](https://github.com/nickwelsh/laravel-zero/tree/main/examples/todos)
+contains a complete session-authenticated application with shared lists and live todos.

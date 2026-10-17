@@ -1,8 +1,17 @@
 packages:
+  - apps/*
   - packages/*
   - examples/*
 minimumReleaseAgeExclude:
   - '@rocicorp/zero@1.10.0'
+  - '@nickwelsh/docs-base@1.0.0'
+  - '@nickwelsh/refquill-darwin-arm64@0.1.0'
+  - '@nickwelsh/refquill-fumadocs@0.1.0'
+  - '@nickwelsh/refquill-linux-arm64@0.1.0'
+  - '@nickwelsh/refquill-linux-x64@0.1.0'
+  - '@nickwelsh/refquill-schema@0.1.0'
+  - '@nickwelsh/refquill-win32-x64@0.1.0'
+  - '@nickwelsh/refquill@0.1.0'
 allowBuilds:
   esbuild: true
   '@rocicorp/zero-sqlite3': true
@@ -19,3 +28,7 @@ peerDependencyRules:
     '@tailwindcss/vite>vite': '0.3.3'
 publicHoistPattern:
   - '@inertiajs/core'
+
+# Required by the docs-base initializer until Waku fixes its API request handler.
+patchedDependencies:
+  waku@1.0.0-rc.3: apps/docs/patches/waku@1.0.0-rc.3.patch

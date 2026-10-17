@@ -4,8 +4,12 @@
     "type": "module",
     "scripts": {
         "test": "vp test run",
-        "typecheck": "tsc --noEmit",
-        "build": "pnpm --filter @laravel-zero/client build",
+        "typecheck": "tsc --noEmit && pnpm docs:typecheck",
+        "build": "pnpm --filter @laravel-zero/client build && pnpm docs:build",
+        "docs:dev": "pnpm --filter @laravel-zero/docs dev",
+        "docs:build": "pnpm --filter @laravel-zero/docs build",
+        "docs:start": "pnpm --filter @laravel-zero/docs start",
+        "docs:typecheck": "pnpm --filter @laravel-zero/docs typecheck",
         "contracts:check": "node scripts/check-generated.mjs",
         "package:check": "node scripts/check-package.mjs",
         "format": "vp fmt && pnpm php:format",
@@ -23,9 +27,11 @@
         "php:peck": "composer --working-dir=packages/laravel peck",
         "php:test:coverage": "composer --working-dir=packages/laravel test:coverage",
         "php:check": "composer --working-dir=packages/laravel check",
-        "check": "pnpm format:check && pnpm lint:check && pnpm typecheck && pnpm php:test && pnpm test && pnpm contracts:check && pnpm build && pnpm package:check"
+        "check": "pnpm format:check && pnpm lint:check && pnpm typecheck && pnpm php:test && pnpm test && pnpm contracts:check && pnpm build && pnpm package:check",
+        "docs:generate": "pnpm --filter @laravel-zero/docs api:generate"
     },
     "devDependencies": {
+        "@dreamsicle.io/stylelint-config-tailwindcss": "^1.2.2",
         "@rocicorp/zero": "1.10.0",
         "@testing-library/react": "^16.3.0",
         "@types/node": "^22.0.0",
@@ -39,6 +45,8 @@
         "markdownlint-cli2": "^0.23.2",
         "react": "^19.0.0",
         "react-dom": "^19.0.0",
+        "stylelint": "^17.16.0",
+        "stylelint-config-standard": "^40.0.0",
         "typescript": "^6.0.2",
         "ulid": "^3.0.0",
         "uuid": "^13.0.0",

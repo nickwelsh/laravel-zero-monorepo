@@ -1,0 +1,38 @@
+---
+title: Laravel Zero
+description: Laravel model contracts, live queries, and optimistic mutations for Rocicorp Zero.
+---
+
+Laravel Zero connects Eloquent models to [Rocicorp Zero](https://zero.rocicorp.dev).
+Declare your public interface in PHP, generate a native Zero schema and typed
+TypeScript models, and subscribe to live data from React.
+
+Laravel authenticates reads and authorizes writes. Zero owns replication, local
+subscriptions, optimistic replay, and reconciliation. One resolved model contract
+controls queries, mutation inputs, and the PostgreSQL publication's columns.
+
+These docs cover **v0.x**, currently `@laravel-zero/client` **0.1.0**, with
+**Zero 1.10.0**, **Laravel 12 or 13**, and **PHP 8.3+**. The Composer and client
+packages are currently consumed from this repository; see local installation.
+
+## Start building
+
+- [Install and generate your first contracts](./docs/getting-started.mdx).
+- [Declare models and their allowed interface](./docs/models.mdx).
+- [Protect reads and writes](./docs/authorization.mdx).
+- [Subscribe from React](./docs/react.mdx).
+- [Browse the generated PHP and TypeScript API](/docs/0.x/api).
+
+## How data moves
+
+1. Eloquent models declare query, mutation, visibility, and column rules.
+2. `zero:generate` reads the migrated database and emits schema, contracts, models,
+   queries, and mutators.
+3. `zero:sync-publication` limits replication to approved tables and columns.
+4. The browser subscribes through Zero; Laravel rebuilds queries using trusted
+   authentication context.
+5. Mutations run optimistically on the client and pass Laravel policies and
+   FormRequests before committing through Eloquent.
+
+Browser context never establishes server authority. Keep cache credentials on
+the server and configure read visibility and write policies independently.

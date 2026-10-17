@@ -1,0 +1,103 @@
+---
+title: Model definitions
+description: Declare columns, queries, mutations, and relationships in Eloquent.
+---
+
+Use a UUID or ULID primary key for optimistic creates. This example assumes a
+`tasks` table with a UUID `id`, `user_id`, nullable UUID `list_id`, `title`, a
+boolean `done` defaulting to false, nullable `completed_at`, timestamps, and soft
+deletes. Match `user_id` to the authenticated user's actual key type.
+
+```php
+namespace App\Models;
+
+use Illuminate\Database\Eloquent\Concerns\HasUuids;
+use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\SoftDeletes;
+use LaravelZero\Attributes\{ZeroMutate, ZeroQuery};
+use LaravelZero\ContextField;
+use LaravelZero\Definition\{AllowedFilter, ZeroDefinition};
+
+#[ZeroQuery(['all', 'one'])]
+#[ZeroMutate(['create', 'update', 'destroy', 'restore', 'force_delete'])]
+class Task extends Model
+{
+    use HasUuids, SoftDeletes;
+
+    protected $fillable = ['user_id', 'list_id', 'title', 'done', 'completed_at'];
+
+    protected function casts(): array
+    {
+        return ['done' => 'boolean', 'completed_at' => 'immutable_datetime'];
+    }
+
+    public static function zero(): ZeroDefinition
+    {
+        return ZeroDefinition::make()
+            ->authorize('user_id', '=', ContextField::UserId)
+            ->fillFromContext('user_id', ContextField::UserId)
+            ->allowedFilters([
+                'title', // String shorthand means escaped substring matching.
+                AllowedFilter::exact('done'),
+                AllowedFilter::exact('completed_at'),
+                AllowedFilter::belongsTo('list'),
+                AllowedFilter::trashed(),
+            ])
+            ->allowedIncludes(['list'])
+            ->allowedSorts(['title', 'created_at'])
+            ->defaultSort('-created_at')
+            ->limits(default: 50, max: 1000);
+    }
+
+    public function list(): BelongsTo
+    {
+        return $this->belongsTo(TaskList::class, 'list_id');
+    }
+}
+```
+
+The related model declares its own read visibility. It can participate in an
+include without exposing top-level queries or mutations:
+
+```php
+namespace App\Models;
+
+use Illuminate\Database\Eloquent\Model;
+use LaravelZero\Definition\ZeroDefinition;
+use LaravelZero\ContextField;
+
+class TaskList extends Model
+{
+    protected $table = 'lists';
+    public $timestamps = false;
+
+    public static function zero(): ZeroDefinition
+    {
+        return ZeroDefinition::make()->authorize('user_id', '=', ContextField::UserId);
+    }
+}
+```
+
+Use `->publicReads()` to explicitly allow public reads. Multiple `->authorize()`
+constraints combine with AND. The former visibility/fill attributes remain supported for compatibility. Authorization applies to roots, included rows, nested
+includes, and relationship filters. Missing trusted context denies access.
+`ContextField::TenantId` is also supported; supply it from a custom server context
+resolver after verifying tenant membership. Configure that resolver with
+`zero.context_resolver`. The browser context supplies local query values and
+optimistic fills; Laravel independently resolves authoritative context.
+
+## Columns and privacy
+
+`$hidden` and `#[ZeroExclude(['secret'])]` add exclusions. `#[ZeroColumns([...])]`
+supplies an allowlist. `#[ZeroIncludeColumns([...])]` explicitly opts a column
+back in. Required excluded keys, ownership fields, timestamps, or relationship
+keys cause generation to fail. The same plan controls the generated client and
+PostgreSQL publication.
+
+`ZeroQuery` opts into `all` and `one`; `ZeroMutate` opts into individual CRUD
+operations. Related models may participate without top-level queries or mutations,
+but every relationship target must be registered and declare its read visibility.
+
+See [authorization](./authorization.mdx) and [replication](./replication.mdx)
+before exposing application data.

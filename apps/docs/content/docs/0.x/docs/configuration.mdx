@@ -1,0 +1,78 @@
+---
+title: Configuration
+description: Configure Laravel discovery, generated output, context, authentication, and the cache.
+---
+
+Publish the package configuration into your Laravel application:
+
+```sh
+php artisan vendor:publish --tag=zero-config
+```
+
+The source defaults live in
+[`packages/laravel/config/zero.php`](https://github.com/nickwelsh/laravel-zero/blob/main/packages/laravel/config/zero.php).
+
+## Laravel settings
+
+| Key                           | Default                                   | Purpose                                                                                                                                |
+| ----------------------------- | ----------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------- |
+| `models`                      | `[]`                                      | Discover models under `app/Models` with Zero attributes or a `zero()` definition; otherwise list every participating model explicitly. |
+| `output`                      | `resources/js/zero/generated.ts`          | Generated schema, contracts, queries, mutators, and model exports.                                                                     |
+| `react`                       | `false`                                   | Also generate the React wrapper and check it for drift.                                                                                |
+| `sync_publication_on_migrate` | `false`                                   | Synchronize the dedicated publication after successful PostgreSQL `up` migration batches.                                              |
+| `publication`                 | `ZERO_PUBLICATION` or `laravel_zero`      | Dedicated PostgreSQL publication managed by the package.                                                                               |
+| `app_id`                      | `ZERO_APP_ID` or `zero`                   | Application identity shared with Zero cache.                                                                                           |
+| `upstream_schema`             | `ZERO_UPSTREAM_SCHEMA` or `zero_0`        | Zero-owned bookkeeping schema; match the cache's `<app-id>_0`.                                                                         |
+| `api_key`                     | `ZERO_API_KEY`                            | Private cache API key; never include it in browser code.                                                                               |
+| `route_prefix`                | `zero`                                    | Prefix for query and mutation endpoints.                                                                                               |
+| `middleware`                  | `['api', 'auth']`                         | Authenticate the end user independently of cache authentication.                                                                       |
+| `context_resolver`            | `LaravelZero\Http\ContextResolver::class` | Resolve trusted `ZeroContext`; by default supplies the authenticated `user_id`.                                                        |
+
+Register relationship targets even if they expose no top-level queries or writes.
+Choose the middleware and guard appropriate to your application. Session
+configuration needs the cookie-forwarding and CSRF setup in
+[generation and replication](./replication.mdx).
+
+## Artisan commands
+
+```sh
+php artisan zero:generate
+php artisan zero:generate --react
+php artisan zero:generate --output=resources/js/zero/generated.ts
+php artisan zero:generate --check
+php artisan zero:sync-publication --dry-run
+php artisan zero:sync-publication
+```
+
+Generation uses your migrated database. Exclude generated contracts from formatters
+so `--check` can compare exact output. Publication synchronization atomically
+replaces the dedicated publication's table and column membership. Use a dedicated
+publication and review `--dry-run` before changing an existing deployment.
+
+The opt-in migration hook skips rollbacks, pretend runs, and non-PostgreSQL
+connections. Publication failures fail the migration command. Ordinary migrations
+do not require deleting the Zero replica.
+
+## Client settings
+
+`zero:generate --react` creates an editable `zero.config.ts` beside generated
+contracts once. Set its public `cacheURL` and optional query/mutation URLs.
+Regeneration preserves that configuration.
+
+The generated provider accepts the native user identity, trusted-context values
+for local behavior, and optional token `auth`. Laravel independently resolves the
+authoritative context. See [React integration](./react.mdx).
+
+To override the client clock or ID provider, use the exported factory and keep
+its returned models, queries, and mutators together:
+
+```ts
+const client = createLaravelZero(schema, definitions, {
+    now: () => new Date(),
+    id: (kind, model) => generateId(kind, model),
+});
+```
+
+Here `generateId` is application code. IDs must still match the model's UUID or
+ULID strategy. Native Zero options control transport and local storage. The
+[generated API reference](/docs/0.x/api) lists the factory and provider types.

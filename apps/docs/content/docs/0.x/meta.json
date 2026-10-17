@@ -1,0 +1,9 @@
+{
+    "title": "v0.x",
+    "root": "version",
+    "version": {
+        "status": "latest",
+        "badges": ["Zero 1.10.0"]
+    },
+    "pages": ["index", "docs", "api"]
+}

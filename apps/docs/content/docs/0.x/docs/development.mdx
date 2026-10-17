@@ -1,0 +1,85 @@
+---
+title: Development
+description: Develop the workspace and regenerate versioned documentation with Refquill.
+---
+
+The repository contains the Composer package in `packages/laravel`, the
+framework-independent client and React exports in `packages/client`, a shared
+todos application in `examples/todos`, and this site in `apps/docs`.
+
+Use PHP 8.3+, Composer, Node 22.18+ (22.x) or 24.11+, and pnpm 11.24.0.
+The Composer platform targets PHP 8.3; CI covers Laravel 12 and 13.
+
+```sh
+composer --working-dir=packages/laravel install
+pnpm install --frozen-lockfile
+pnpm check
+```
+
+## Library checks
+
+`pnpm check` checks formatting, lint, PHPStan, Rector, spelling, TypeScript,
+Pest, frontend tests, generated-contract drift, builds, and package exports.
+
+```sh
+pnpm test
+pnpm php:test
+pnpm contracts:check
+pnpm typecheck
+pnpm build
+pnpm package:check
+```
+
+PostgreSQL tests are optional locally. Set `ZERO_TEST_PG_DATABASE` to an empty,
+disposable database named `laravel_zero_test` or `laravel_zero_test_*` and supply
+optional `ZERO_TEST_PG_HOST`, `ZERO_TEST_PG_PORT`, `ZERO_TEST_PG_USER`, and
+`ZERO_TEST_PG_PASSWORD`. The harness refuses an existing application schema and
+removes only its owned fixtures. Do not run two suites on the same database concurrently.
+
+## Documentation site
+
+This site uses [`@nickwelsh/docs-base`](https://github.com/nickwelsh/docs-base),
+which owns the application, styles, MDX, search, Markdown exports, and reference
+rendering. This repository owns the configuration, written guides, and generated
+API JSON. There are no copied application components or route handlers to maintain.
+
+```sh
+pnpm docs:dev
+pnpm docs:typecheck
+pnpm docs:build
+pnpm docs:start
+```
+
+The development site opens at
+[localhost:3000/laravel-zero/](http://localhost:3000/laravel-zero/).
+The production preview uses port 8080. `apps/docs/waku.config.ts` configures the
+public origin `https://docs.nickwelsh.me` and base path `/laravel-zero`. Change
+those values and rebuild if hosting elsewhere. These commands build and preview;
+they do not deploy the site.
+
+## Regenerate v0.x API docs
+
+```sh
+pnpm docs:generate
+pnpm --filter @laravel-zero/docs api:validate
+```
+
+`apps/docs/refquill.json` selects the PHP package source and the TypeScript
+core and React entry points. Refquill writes `apps/docs/generated/api.json`,
+which is committed so changes to API docs are reviewable. Development and
+production builds regenerate it before starting the shared app.
+
+The reference appears at `/laravel-zero/docs/0.x/api` and includes source links
+relative to the repository root. Do not edit or format the generated JSON by hand.
+Update source declarations/comments and regenerate instead. Refquill preserves
+the previous output if analysis fails.
+
+## Add or update guides
+
+Edit MDX under `apps/docs/content/docs/0.x/docs` and list pages in its
+`meta.json`. Relative `.mdx` links are resolved by the shared app. Keep generated
+API routes separate from authored pages: docs-base rejects route collisions.
+
+For a future release line, add a version folder and version metadata, then give
+its generated API input a separate file and route. The current configuration
+tracks the v0.x source in this checkout.

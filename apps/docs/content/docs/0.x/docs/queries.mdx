@@ -1,0 +1,99 @@
+---
+title: Queries and filters
+description: Compose immutable selections with allowed filters, includes, sorting, and pagination.
+---
+
+Use generated model exports to build selections. Both `Task.query.all()` and
+`Task.query().all()` are supported.
+
+```ts
+import { Task } from './zero/generated';
+
+Task.query.all().orderBy('title').limit(25);
+Task.query.one(id).with('list');
+Task.query.all().with('comments', 5);
+Task.query.all().with('list', (list) => list.with('tasks', 5));
+Task.query.all().withTrashed();
+Task.query.all().onlyTrashed();
+```
+
+Declare each filter, include, and sort in the model definition. The relation names
+above are examples: only declared relations and operations are accepted. Singular
+queries allow includes, but do not allow filtering or pagination. Builders are
+immutable and track included result shapes.
+
+## Live pagination
+
+```tsx
+const tasks = useData(Task.query.all().orderBy('title').infinite(50));
+
+<button disabled={tasks.infinite?.hasMore !== true} onClick={() => tasks.infinite?.loadMore()}>
+    Load more
+</button>;
+```
+
+Infinite loading expands one live ordered query using a lookahead row. It resets
+on query or client changes and respects the model's `maxLimit`. `hasMore` remains
+unknown until sufficient data arrives; `capped` reports the maximum limit.
+Direct to-many includes can be limited. Junction includes cannot be ordered or limited.
+
+## Declaring filters
+
+`allowedFilters`, `allowedIncludes`, and `allowedSorts` accept variadic arguments
+or one array. Disallowed arguments remain errors on both client and server.
+
+```php
+->allowedFilters(
+    'title', // Escaped, case-insensitive substring.
+    AllowedFilter::exact('id'),
+    AllowedFilter::beginsWithStrict('prefix', 'title'),
+    AllowedFilter::endsWithStrict('suffix', 'title'),
+    AllowedFilter::operator('completed_after', FilterOperator::GREATER_THAN, 'completed_at'),
+    AllowedFilter::operator('completed_at', FilterOperator::DYNAMIC),
+    AllowedFilter::groupOr('search', [
+        AllowedFilter::partial('title'),
+        AllowedFilter::exact('id'),
+    ]),
+    AllowedFilter::callback('is_completed', fn (ZQLBuilder $query) =>
+        $query->where('completed_at', 'IS NOT', null)),
+)
+```
+
+Import `LaravelZero\Enums\FilterOperator` and the builders from `LaravelZero\Query`.
+Scalar groups use one value across their members; use compatible column types.
+`groupAnd` is also available. Unlike URL query strings, dynamic operators retain
+the actual input type, including `Date`:
+
+```ts
+Task.query.all().filter({
+    model: 'Task',
+    name: 'completed_at',
+    value: { operator: '>=', value: new Date('2026-01-01T00:00:00Z') },
+});
+```
+
+Portable callback filters build a fixed predicate template during metadata
+construction. An optional second callback argument represents its symbolic input:
+
+```php
+AllowedFilter::callback('title_is', fn (ZQLBuilder $query, mixed $value) =>
+    $query->where('title', $value), 'title')
+```
+
+The last argument names the column defining the input type; without it, the input
+is boolean. A requested callback applies its predicate, including when its value
+is false. Use the input in builder comparisons; do not branch on it or call PHP
+string/date functions on it. Runtime PHP/context belongs in `enforceServerScope`.
+Callback relationship predicates, arbitrary Eloquent SQL/scopes, custom SQL sorts,
+and Spatie's URL coercions are not supported. This API follows Spatie's naming
+where ZQL supports the behavior; it is not an Eloquent builder replacement.
+
+## Without React
+
+```ts
+const selection = Task.query.all().with('list');
+const tasks = selection.decode(await zero.run(selection.request()));
+```
+
+Use the native Zero instance configured with the generated schema, queries, and
+mutators. Hydrated rows are [model snapshots](./records-and-casts.mdx).

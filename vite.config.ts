@@ -13,6 +13,8 @@ export default defineConfig({
         ignorePatterns: [
             '**/vendor/**',
             '**/dist/**',
+            '**/.docs-base/**',
+            'apps/docs/generated/**',
             '**/public/build/**',
             '**/resources/js/zero/generated.ts',
             '**/resources/js/actions/**',
@@ -51,6 +53,8 @@ export default defineConfig({
         ignorePatterns: [
             '**/vendor/**',
             '**/dist/**',
+            '**/.docs-base/**',
+            'apps/docs/generated/**',
             '**/public/build/**',
             '**/resources/js/zero/generated.ts',
             '**/resources/js/actions/**',

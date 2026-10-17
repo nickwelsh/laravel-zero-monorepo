@@ -1,0 +1,133 @@
+---
+title: React integration
+description: Connect a generated provider, live data, filter controls, and mutation hooks.
+---
+
+Generate the optional React wrapper:
+
+```sh
+php artisan zero:generate --react
+```
+
+This writes `generated.react.ts` beside the contracts and creates an editable
+`zero.config.ts` once. Set its public `cacheURL` and optional query/mutation URLs;
+regeneration never overwrites that configuration. Set `zero.react` to `true`
+to include the wrapper in ordinary generation and `--check`.
+
+```tsx
+import { ZeroProvider } from './zero/generated.react';
+
+<ZeroProvider userID={String(user.id)} context={{ user_id: user.id }}>
+    <App />
+</ZeroProvider>;
+```
+
+The wrapper binds schema/mutators, stabilizes equivalent scalar context objects,
+and replaces the native provider when user/context identity changes. Context
+also partitions local storage, including when switching tenants. An optional
+`auth` prop supports token renewal. The native provider owns construction and cleanup.
+The generic native `ZeroProvider` remains available from the React package for
+applications that manage Zero themselves.
+
+```tsx
+import { useData, useFilter, useMutation } from '@laravel-zero/client/react';
+import { Task } from './zero/generated';
+
+function Tasks() {
+    const [title, TitleFilter] = useFilter(Task, 'title', { debounceMs: 150 });
+    const tasks = useData(Task.query().all().with('list').filter(title).infinite(50));
+    const create = useMutation(Task.create());
+
+    return (
+        <>
+            <TitleFilter label="Search tasks" />
+            <button disabled={create.state.status === 'pending'} onClick={() => create({ title: 'Hello' })}>
+                Add task
+            </button>
+            {tasks.data.map((task) => (
+                <p key={task.data.id}>{task.data.title}</p>
+            ))}
+            <button disabled={tasks.infinite?.hasMore !== true} onClick={() => tasks.infinite?.loadMore()}>
+                Load more
+            </button>
+        </>
+    );
+}
+```
+
+`useData` exposes `data`, `complete`, native `details`, `connection`, `error`,
+`retry()`, and a `status` of `idle`, `loading`, `refreshing`, `failure`, `stale`, or
+`success`. Disabled queries are idle; incomplete empty results are loading;
+incomplete current-query rows are refreshing; complete empty results succeed.
+Query errors with current data are stale; errors without data are failures.
+Connection state remains separate. `render()` accepts the six matching handlers:
+`onIdle`, `onLoading`, `onRefreshing(rows)`, `onFailure(error)`,
+`onStale([rows, error])`, and `onSuccess(rows)`.
+
+Other query examples:
+
+```ts
+Task.query().one(id).with('list'); // Row | undefined, including visibility-filtered relations.
+Task.query().all().orderBy('title').limit(25);
+Task.query().all().withTrashed();
+Task.query().all().onlyTrashed();
+// If a declared direct to-many relation is named comments:
+Task.query().all().with('comments', 5);
+// If list declares a tasks include:
+Task.query()
+    .all()
+    .with('list', (list) => list.with('tasks', 5));
+```
+
+Builders are immutable and track included result shapes. Singular queries allow
+includes but not filters or pagination. Infinite loading expands one live ordered
+query, uses a lookahead row, resets on query/client changes, and respects `maxLimit`.
+`hasMore` is unknown until sufficient data arrives; `capped` reports the maximum.
+
+`useFilters(Task, ['done', 'title'])` returns `[filters, Controls]` for
+`.filters(filters)`. `useFilter` also returns a third setter. Undefined unsets a
+filter; null, false, and empty strings remain distinct. Substring filters accept
+strings only. Custom per-filter controls use `FilterControlProps<Value>`;
+`FilterProvider` can supply shared control defaults. Controls retain their identity
+while editing. Initial values/options belong to the mounted filter binding.
+The basic date control edits UTC; use a custom control for local-calendar semantics.
+
+Mutations return native `client` and `server` completion promises plus the stable
+record `id`. `state` reports pending/success/failure and field errors; `form`
+contains columns/writable fields, editable `values`, `setValue()`, and field `errors`.
+`submit()` submits form values, `defaultValues` provides writable defaults, and
+`reset()` resets form and mutation state. Bound update forms submit changed fields plus fields explicitly required by update rules. Handle both
+synchronous `InputError` from preparation and asynchronous mutation outcomes.
+
+```ts
+const update = useMutation(task.update());
+const call = update({ completed_at: new Date() });
+const result = await call.server;
+// result.type is 'success' or 'error'; inspect result.error on failure.
+```
+
+Outside React, use `zero.mutate(Task.create().prepare(input))`, or
+`Task.query().all().decode(await zero.run(Task.query().all().request()))`.
+Public dates are `Date`; native Zero rows/requests use epoch milliseconds.
+`HasUuids` uses UUIDv7 and `HasUlids` uses ULID. IDs and the optimistic clock are
+captured once before enqueueing. Eloquent timestamp column constants are respected.
+For millisecond-preserving writes, use temporal columns with matching precision
+and an Eloquent `$dateFormat` such as `Y-m-d H:i:s.u`.
+
+To customize the client clock or generated-ID provider, call
+`createLaravelZero(schema, definitions, {now: () => new Date(), id: (kind, model) => ...})`
+and use its returned models/queries/mutators together. Custom IDs must still match
+the declared UUID/ULID strategy. Native Zero options configure storage and transport.
+
+Records are model snapshots: columns and loaded relations live under `task.data`.
+Included relations contain snapshots too (`task.data.list?.data.name`). Instance
+methods such as `task.update()` and `task.destroy()` bind the record ID and remain
+callable when destructured. For lazy relations, `useData(task.list)` projects the
+relation through an authorized parent `one` query; targets need no top-level query.
+Lazy access requires the parent to opt into `one` and the relation to be an allowed include.
+Generated exports include both `Task` (instance type and model value) and `TaskRow`
+(the column-only type). Both `Task.query.all()` and `Task.query().all()` work.
+
+Continue with [mutations](./mutations.mdx) for forms and field permissions,
+[queries](./queries.mdx) for richer filters, or
+[records and casts](./records-and-casts.mdx) for DTO typing.

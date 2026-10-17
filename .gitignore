@@ -12,3 +12,5 @@ node_modules/
 .idea/
 **/.cache/
 /.pnpm-store/
+
+**/.docs-base/

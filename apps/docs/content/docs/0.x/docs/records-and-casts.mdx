@@ -1,0 +1,56 @@
+---
+title: Records, casts, and types
+description: Work with readonly snapshots, lazy relations, dates, enums, and optional DTO typing.
+---
+
+```tsx
+const tasks = useData(Task.query.all().with('list'));
+const task = tasks.data[0];
+// task.data.title
+// task.data.list?.data.name
+// useData(task.list) in a component receiving a defined task
+```
+
+Columns never collide with instance mutation methods. Included relations are
+recursively hydrated snapshots. Lazy relations run through the parent's authorized
+`one` query. They do not bypass visibility by querying a target table directly.
+
+All supported database dates/timestamps, including implicit lifecycle fields,
+become `Date`. Backed enum casts become backing-value literal unions. Boolean,
+integer, float, string, array/JSON, and object casts hydrate their public values;
+mutation preparation converts them back to native storage values. PHP DTO methods,
+encrypted casts, and arbitrary custom cast transformations do not run in JavaScript.
+JSON remains generic when no shape is declared.
+
+A project can reuse a generated Laravel Data type or any handwritten DTO shape
+through TypeScript's native module augmentation:
+
+```ts
+import type { PreferencesData } from './types';
+
+declare module '@laravel-zero/client' {
+    interface ModelTypes {
+        Task: { preferences: PreferencesData };
+    }
+}
+```
+
+The mapping refines rows and mutation inputs. It supplies static JSON typing,
+not a runtime DTO constructor or validator. Authoritative nested validation still
+belongs in Laravel. This does not require Laravel Data or TypeScript Transformer.
+
+## Record identity
+
+Generated exports include `Task` as an instance type and model value, plus `TaskRow`
+as the column-only type. Instance methods such as `task.update()` and
+`task.destroy()` bind the record ID and remain callable when destructured. Bound
+IDs cannot be overridden. Lazy relations require the parent's `one` query and an
+allowed include; their targets need no top-level query.
+
+## Storage representation
+
+Public dates are `Date`; native Zero rows and mutation arguments use epoch
+milliseconds. `HasUuids` uses UUIDv7 and `HasUlids` uses ULID. Eloquent timestamp
+column constants are respected. For millisecond-preserving writes, use temporal
+columns with matching precision and an Eloquent `$dateFormat` such as
+`Y-m-d H:i:s.u`. JavaScript numeric precision applies to bigint and decimal values.

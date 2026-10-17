@@ -456,6 +456,13 @@ cast/DTO typing, form usage, and field-level write authorization.
 
 ## Development and verification
 
+The [v0.x documentation site](apps/docs/README.md) uses
+[`@nickwelsh/docs-base`](https://github.com/nickwelsh/docs-base), with guides and
+Refquill-generated PHP and TypeScript API references. Run `pnpm docs:dev` from
+the repository root and open `http://localhost:3000/laravel-zero/`. Use
+`pnpm docs:build` and `pnpm docs:start` for a production preview, or
+`pnpm docs:generate` to regenerate the API reference independently.
+
 ```sh
 composer --working-dir=packages/laravel install
 pnpm install --frozen-lockfile

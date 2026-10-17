@@ -5,6 +5,16 @@ The repository root owns workspace tooling and cross-language contract tests.
 configuration, tests and PHP tools. `packages/client` owns the
 `@laravel-zero/client` npm package and its core and React exports.
 
+`apps/docs` uses [`@nickwelsh/docs-base`](https://github.com/nickwelsh/docs-base)
+for the shared Waku/Fumadocs application. It owns site configuration, v0.x guides,
+and Refquill-generated PHP and TypeScript references. Run `pnpm docs:dev` at
+`http://localhost:3000/laravel-zero/`, or `pnpm docs:build` followed by
+`pnpm docs:start` for a production preview at `http://localhost:8080/laravel-zero/`.
+Both dev and build regenerate the API reference. `pnpm docs:generate` regenerates
+it independently; commit `apps/docs/generated/api.json` after source changes.
+The Waku patch supplied by docs-base is registered in the root workspace config.
+See [the site README](../apps/docs/README.md) for content and hosting configuration.
+
 Use PHP 8.3+, Composer, Node 22.18+ (22.x) or 24.11+, and the pinned pnpm version. The
 Composer platform is pinned to PHP 8.3 so development dependencies remain usable
 on the minimum supported runtime. Laravel 12 and 13 are tested in CI.
@@ -26,11 +36,11 @@ test suites against the same database concurrently.
 | `pnpm format` / `format:check` | Oxfmt for workspace files and Pint for PHP                       |
 | `pnpm lint`                    | Apply frontend fixes and Markdown fixes                          |
 | `pnpm lint:check`              | Frontend, Markdown, PHPStan, Rector dry run and Peck             |
-| `pnpm typecheck`               | Strict TypeScript checking, including public-contract fixtures   |
+| `pnpm typecheck`               | Strict TypeScript checking for package contracts and docs        |
 | `pnpm test`                    | Vite+ tests, including React and PHP/native Zero AST comparisons |
 | `pnpm php:test`                | Pest with Testbench and optional PostgreSQL integration tests    |
 | `pnpm php:rector`              | Apply PHP 8.3 / Laravel 12-compatible Rector changes             |
-| `pnpm build`                   | Vite+ library packaging with declaration files                   |
+| `pnpm build`                   | Vite+ library packaging and Waku documentation build             |
 | `pnpm contracts:check`         | Verify generated TypeScript matches PHP model metadata           |
 | `pnpm package:check`           | Verify built exports and load the core with React blocked        |
 

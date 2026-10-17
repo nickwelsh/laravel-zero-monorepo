@@ -1,0 +1,33 @@
+---
+title: Supported constraints
+description: Understand the current v0.x database, relationship, and runtime limits.
+---
+
+- Automatic `all`/`one` and create/update/destroy/restore/force_delete only.
+  Custom queries/mutations, upsert, and Inertia adapters are deferred.
+- One upstream connection, unprefixed tables in `public`, one model per table,
+  and unique model short names. Creates require standard `HasUuids` or `HasUlids`;
+  existing numeric-key models can read/update/delete without optimistic creates.
+- Plain belongs-to, has-one, has-many, and belongs-to-many relations. Pivots need
+  real primary keys and cannot also be registered as models. Constrained or
+  polymorphic Eloquent relations fail generation.
+- Direct to-many includes can be limited. Native Zero junction includes cannot
+  be ordered or limited. Includes nest to a maximum depth of eight.
+- Portable SQL scalar/JSON columns and date/timestamp columns. JSON filtering and
+  sorting, SQL time-only fields, custom database types, and arrays are unsupported.
+  JavaScript numeric precision applies to bigint/decimal data.
+- Eloquent scopes, accessors, encrypted casts, appended properties, and arbitrary
+  PHP logic do not execute on replicated reads. Keep sensitive stored columns
+  excluded and express visibility using the Zero definition. Supported primitive casts are
+  hydrated, backed enums use literal unions, and DTO JSON shapes can use optional
+  TypeScript module augmentation without requiring Laravel Data.
+- Server-only validation, normalization, defaults, timestamps, and model events
+  can reconcile optimistic values. Keep external event side effects after commit.
+
+## Nested write limits
+
+Nested writes support create/update through direct belongs-to, has-one, and
+has-many relations using primary-key references. Each graph is limited to eight
+relation levels and 100 records including the root. The same record cannot occur
+twice. Connect, disconnect, reparenting, nested deletion, many-to-many, and
+polymorphic writes are unsupported. See [nested mutations](./nested-mutations.mdx).

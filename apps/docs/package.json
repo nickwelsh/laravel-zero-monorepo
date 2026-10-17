@@ -1,0 +1,29 @@
+{
+    "name": "@laravel-zero/docs",
+    "private": true,
+    "type": "module",
+    "scripts": {
+        "api:generate": "refquill generate refquill.json",
+        "api:validate": "refquill validate generated/api.json",
+        "dev": "pnpm api:generate && docs-base dev",
+        "build": "pnpm api:generate && docs-base build",
+        "start": "docs-base start",
+        "typecheck": "tsc --noEmit",
+        "check": "pnpm api:validate && pnpm typecheck"
+    },
+    "dependencies": {
+        "@nickwelsh/docs-base": "^1.0.0",
+        "fumadocs-core": "16.17.5",
+        "fumadocs-mdx": "15.4.7",
+        "fumadocs-ui": "npm:@fumadocs/base-ui@16.17.5",
+        "react": "19.3.1",
+        "react-dom": "19.3.1",
+        "react-server-dom-webpack": "19.3.1",
+        "waku": "1.0.0-rc.3"
+    },
+    "devDependencies": {
+        "@nickwelsh/refquill": "0.1.0",
+        "@types/node": "^22.20.5",
+        "typescript": "^6.0.2"
+    }
+}

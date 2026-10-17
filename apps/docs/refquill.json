@@ -1,0 +1,24 @@
+{
+    "title": "Laravel Zero v0.x API reference",
+    "sourceRoot": "../..",
+    "output": "generated/api.json",
+    "inputs": [
+        {
+            "language": "php",
+            "name": "laravel",
+            "paths": ["../../packages/laravel/src"]
+        },
+        {
+            "language": "typescript",
+            "name": "client",
+            "tsconfig": "../../tsconfig.json",
+            "entryPoints": ["../../packages/client/src/index.ts"]
+        },
+        {
+            "language": "typescript",
+            "name": "react",
+            "tsconfig": "../../tsconfig.json",
+            "entryPoints": ["../../packages/client/src/react/index.ts"]
+        }
+    ]
+}
