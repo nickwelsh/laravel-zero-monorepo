@@ -1,41 +1,27 @@
 ---
 title: Getting started
-description: Install Zero for Laravel locally and connect your first model to Zero.
+description: Install Zero for Laravel and connect your first model to Zero.
 ---
 
 - PHP 8.3+, Laravel 12 or 13, and the PDO PostgreSQL extension.
 - PostgreSQL 15+ with logical replication configured for Zero.
 - Zero cache 1.10.0, the matching npm client, and React 18 or 19 for React bindings.
-- Node 24+ and pnpm 11 for developing this monorepo.
 
-The packages have not been published. To use this checkout in a Laravel app, add
-a Composer path repository pointing to its absolute path and require the dev package:
-
-```json
-{
-    "repositories": [{ "type": "path", "url": "../zero-for-laravel/packages/laravel", "options": { "symlink": true } }]
-}
-```
+Install the PHP package from Packagist and the JavaScript client from npm in
+your Laravel application, then publish the configuration:
 
 ```sh
-composer require nickwelsh/zero-for-laravel:@dev
+composer require nickwelsh/zero-for-laravel
+pnpm add @nickwelsh/zero-for-laravel
+pnpm add --save-exact @rocicorp/zero@1.10.0
 php artisan vendor:publish --tag=zero-config
 ```
 
-Build and pack the npm package from this repository, then install the resulting
-tarball in your app:
-
-```sh
-composer --working-dir=packages/laravel install
-pnpm install --frozen-lockfile
-pnpm build
-pnpm --filter @nickwelsh/zero-for-laravel pack --pack-destination /tmp/zero-for-laravel-pack
-```
-
-```sh
-# From your Laravel app:
-pnpm add /tmp/zero-for-laravel-pack/nickwelsh-zero-for-laravel-0.1.0.tgz @rocicorp/zero@1.10.0
-```
+These commands install the current stable Zero for Laravel release, **v0.1.0**,
+without development stability flags or an explicit version suffix. Keep the PHP
+and JavaScript packages on matching release versions. The Zero client and cache
+must both use **1.10.0**. React bindings require React 18 or 19 in your application;
+the core client can be used without React.
 
 Laravel discovers the service provider automatically. The default model discovery
 scans classes with Zero attributes or a `zero()` definition under `app/Models`. Alternatively, list every participating

@@ -23,9 +23,10 @@ uses `npm stage publish` with npm provenance and OIDC. No `NPM_TOKEN` or
 `NODE_AUTH_TOKEN` secret is required.
 
 The bootstrap package `@nickwelsh/zero-for-laravel@0.0.0-placeholder.0` contains only
-`package.json` and uses the `bootstrap` dist-tag. It exists to configure trusted
-publishing; it is not an installable client release. npm also assigned `latest`
-to this first version; the first real release will replace that tag.
+`package.json` and uses the `bootstrap` dist-tag. It reserves the package name for
+trusted publishing and is not an installable client release. Stable releases use
+the `latest` tag, starting with **0.1.0**; installation guides use the unversioned
+package name to select that tag.
 
 Create the GitHub environment `npm`. In the npm package's trusted-publisher
 settings, choose GitHub Actions and use these exact values:
@@ -45,9 +46,9 @@ default workflow permissions can remain read-only. Repository Admin access is
 needed for initial environment and secret setup; package-owner access is used to
 configure npm. Do not grant an admin token to the publish job.
 
-For the first release, keep `packages/client/package.json` at `0.1.0` and publish
-a GitHub Release tagged `v0.1.0` after these workflows are on `main`. Later, change
-the package version and publish a matching `v<version>` release. Stable releases
+The client package version is `0.1.0`. To release, set the version in
+`packages/client/package.json` and publish a matching GitHub Release tagged
+`v<version>` (for example `v0.1.0`) from `main`. Stable releases
 publish to `latest`; prerelease versions (for example `0.2.0-beta.1`) must be marked
 as GitHub prereleases and use `next`.
 
