@@ -69,7 +69,8 @@ pnpm --filter @laravel-zero/docs exec vite preview
 ```
 
 The separate Vite build packages Waku's `dist/public` into Cloudflare Build Output
-without rebuilding the application. `cf deploy --prebuilt --mode production`
+under a `laravel-zero/` directory, without rebuilding the application or requiring
+Cloudflare's account-gated `assets.basePath` feature. `cf deploy --prebuilt --mode production`
 deploys those exact assets. `cf build` detects Waku and runs its framework build,
 which does not produce this static Cloudflare package, so use `deploy:check`.
 

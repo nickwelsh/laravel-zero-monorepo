@@ -7,7 +7,6 @@ export default defineConfig({
         workersDev: false,
         previewUrls: false,
         assets: {
-            basePath: '/laravel-zero',
             htmlHandling: 'auto-trailing-slash',
             notFoundHandling: '404-page',
         },
