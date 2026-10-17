@@ -13,6 +13,7 @@ export interface Column {
 export interface Relation {
     readonly model: string;
     readonly cardinality: 'one' | 'many';
+    readonly kind?: 'belongsTo' | 'hasOne' | 'hasMany';
     readonly path: readonly {
         readonly source: readonly string[];
         readonly dest: readonly string[];
@@ -59,6 +60,9 @@ export interface ModelContract {
     readonly columns: Readonly<Record<string, Column>>;
     readonly queries: readonly ('all' | 'one')[];
     readonly mutations: readonly Operation[];
+    readonly nestedMutations?: Partial<
+        Readonly<Record<'create' | 'update', Readonly<Record<string, readonly ('create' | 'update')[]>>>>
+    >;
     readonly validation: Partial<Readonly<Record<Operation, Readonly<Record<string, readonly string[]>>>>>;
     readonly authorization: readonly {
         readonly field: string;

@@ -1,4 +1,5 @@
 // @vitest-environment jsdom
+import { nestedRuntime } from '../../../tests/interop/nested';
 import { Zero } from '@rocicorp/zero';
 import type { ClientContext } from './index';
 import { describe, expect, it } from 'vite-plus/test';
@@ -119,5 +120,61 @@ describe('native generated provider lifecycle', () => {
         });
         expect(first.closed).toBe(true);
         cleanup();
+    });
+});
+
+describe('native atomic nested mutations', () => {
+    it('creates dependencies and children together and rolls back a later optimistic failure', async () => {
+        const runtime = nestedRuntime();
+        const { Task: NestedTask } = runtime.models;
+        const zero = new Zero<typeof schema, undefined, ClientContext>({
+            schema,
+            mutators: runtime.mutators,
+            context: { user_id: 'alice' },
+            userID: 'nested',
+            cacheURL: null,
+            kvStore: 'mem',
+            logLevel: 'error',
+        });
+        try {
+            const request = NestedTask.create()
+                .with('list')
+                .with('comments')
+                .prepare({ title: 'Root', list: { name: 'List' }, comments: [{ body: 'First' }] });
+            expect(await zero.mutate(request).client).toEqual({ type: 'success' });
+            const rows = await zero.run(NestedTask.query.all().with('list').with('comments').request());
+            expect(rows).toMatchObject([
+                {
+                    id: request.args.id,
+                    list: { name: 'List' },
+                    comments: [{ body: 'First', task_id: request.args.id }],
+                },
+            ]);
+            const other = NestedTask.create()
+                .with('comments')
+                .prepare({ title: 'Other', comments: [{ body: 'Other child' }] });
+            expect(await zero.mutate(other).client).toEqual({ type: 'success' });
+            const forged = NestedTask.update()
+                .with('comments')
+                .prepare({
+                    id: request.args.id,
+                    title: 'Must roll back',
+                    comments: [{ id: String(other.args.relations!.comments!.records[0]!.id), body: 'Stolen' }],
+                });
+            expect((await zero.mutate(forged).client).type).toBe('error');
+            expect(await zero.run(NestedTask.query.one(request.args.id).request())).toMatchObject({ title: 'Root' });
+            const valid = NestedTask.update()
+                .with('comments')
+                .prepare({
+                    id: request.args.id,
+                    comments: [{ id: String(request.args.relations!.comments!.records[0]!.id), body: 'Changed' }],
+                });
+            expect(await zero.mutate(valid).client).toEqual({ type: 'success' });
+            expect(await zero.run(NestedTask.query.one(request.args.id).with('comments').request())).toMatchObject({
+                comments: [{ body: 'Changed' }],
+            });
+        } finally {
+            await zero.close();
+        }
     });
 });

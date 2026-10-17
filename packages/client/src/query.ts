@@ -198,7 +198,7 @@ export class Selection<
         readonly args: Readonly<QueryArgs> = {},
         readonly pageSize?: number,
         readonly defaults: ClientDefaults = {},
-        readonly mutators: NativeMutators<S, D> = createMutators<S, D>(definitions),
+        readonly mutators: NativeMutators<S, D> = createMutators<S, D>(schema, definitions),
     ) {
         freeze(this.args);
     }

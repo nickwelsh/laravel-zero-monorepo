@@ -1,4 +1,5 @@
 import { Task, TaskList, schema, definitions } from './generated';
+import { nestedRuntime, nestedDefinitions } from './nested';
 import { createLaravelZero } from '@laravel-zero/client';
 import type { SelectionData } from '@laravel-zero/client';
 import {
@@ -133,4 +134,56 @@ function useDtoContracts() {
     // @ts-expect-error dynamic operators retain the column's value type
     Task.query.all().filter({ model: 'Task', name: 'title_operator', value: { operator: '!=', value: 1 } });
     return theme;
+}
+
+function useNestedContracts() {
+    const { models } = nestedRuntime();
+    const operation = models.Task.create().with('list').with('comments');
+    const mutation = useMutation(operation);
+    mutation({ title: 'Root', list: { name: 'List' }, comments: [{ body: 'Comment' }] });
+    mutation.form.setValue('list.name', 'List');
+    mutation.form.setValue('comments.0.body', 'Comment');
+    // @ts-expect-error child field values retain their model types
+    mutation.form.setValue('comments.0.body', false);
+    // @ts-expect-error nested fields are restricted to declared child inputs
+    mutation.form.setValue('comments.0.secret', 'hidden');
+    // @ts-expect-error child linking keys are derived by the executor
+    operation.prepare({ title: 'Root', comments: [{ body: 'Comment', task_id: 'forged' }] });
+    // @ts-expect-error a selected belongsTo relation owns its foreign key
+    operation.prepare({ title: 'Root', list_id: 'forged' });
+    // @ts-expect-error nested create requires the child's required fields
+    operation.prepare({ title: 'Root', comments: [{}] });
+    // @ts-expect-error selecting a nested operation does not expose it standalone
+    models.TaskList.create();
+    // @ts-expect-error allowed includes do not grant nested mutation access
+    models.Task.create().with('tags');
+    // @ts-expect-error update is not enabled on comments inside a root create
+    models.Task.create().with('comments', 'update');
+    models.Task.update()
+        .with('comments', 'create')
+        .prepare({ id: 'a', comments: [{ body: 'New' }] });
+    models.Task.update()
+        .with('comments')
+        .prepare({ id: 'a', comments: [{ id: 'c', body: 'Changed' }] });
+    models.Task.create()
+        .with('list', 'create', (list) => list.with('tasks'))
+        .prepare({ title: 'Root', list: { name: 'List', tasks: [{ title: 'Child' }] } });
+}
+
+function requiredNestedLink() {
+    const runtime = createLaravelZero(schema, {
+        ...nestedDefinitions,
+        Task: {
+            ...nestedDefinitions.Task,
+            columns: {
+                ...nestedDefinitions.Task.columns,
+                list_id: { ...nestedDefinitions.Task.columns.list_id, nullable: false },
+            },
+        },
+    } as const);
+    runtime.models.Task.create()
+        .with('list')
+        .prepare({ title: 'Root', list: { name: 'Required' } });
+    // @ts-expect-error nested input replaces the required foreign key
+    runtime.models.Task.create().with('list').prepare({ title: 'Missing list' });
 }

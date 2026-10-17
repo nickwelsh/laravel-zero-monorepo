@@ -1,7 +1,7 @@
 import { useZero } from '@rocicorp/zero/react';
 import type { Schema, MutatorResult, MutatorResultDetails } from '@rocicorp/zero';
 import { useEffect, useRef, useState } from 'react';
-import type { ClientContext, ContractMap, Operation, RecordId, ModelContract } from '../contract';
+import type { ClientContext, ContractMap, Operation, RecordId } from '../contract';
 import type { Mutation, OperationInput } from '../mutation';
 import { InputError } from '../validation';
 
@@ -18,17 +18,40 @@ export type MutationCallback<
     N extends keyof D & string,
     O extends Operation,
     Bound extends boolean = false,
-> = ((input: OperationInput<D, N, O, Bound>) => MutationCall<RecordId<D, N>>) & {
+    Input = OperationInput<D, N, O, Bound>,
+> = ((input: Input) => MutationCall<RecordId<D, N>>) & {
     readonly state: MutationState;
-    readonly form: Mutation<S, D, N, O, Bound>['form'] & MutationForm<OperationInput<D, N, O, Bound>>;
-    readonly defaultValues: Partial<OperationInput<D, N, O, Bound>>;
+    readonly form: Mutation<S, D, N, O, Bound, Input>['form'] & MutationForm<Input>;
+    readonly defaultValues: Partial<Input>;
     submit(event?: { preventDefault(): void }): MutationCall<RecordId<D, N>>;
     reset(): void;
 };
+type FormPath<T, Depth extends unknown[] = []> = Depth['length'] extends 8
+    ? never
+    : T extends Date
+      ? never
+      : T extends readonly (infer Item)[]
+        ? `${number}` | `${number}.${FormPath<NonNullable<Item>, [...Depth, unknown]>}`
+        : T extends object
+          ? { [K in keyof T & string]: K | `${K}.${FormPath<NonNullable<T[K]>, [...Depth, unknown]>}` }[keyof T &
+                string]
+          : never;
+type FormValue<T, P extends string> = P extends `${infer Head}.${infer Rest}`
+    ? Head extends keyof T
+        ? FormValue<NonNullable<T[Head]>, Rest>
+        : T extends readonly (infer Item)[]
+          ? FormValue<NonNullable<Item>, Rest>
+          : never
+    : P extends keyof T
+      ? T[P]
+      : T extends readonly (infer Item)[]
+        ? Item
+        : never;
+
 export type MutationForm<Input> = {
     readonly values: Partial<Input>;
     readonly errors: MutationState['fields'];
-    setValue<K extends keyof Input>(field: K, value: Input[K]): void;
+    setValue<P extends FormPath<Input>>(field: P, value: FormValue<Input, P>): void;
 };
 const idle: MutationState = {
     status: 'idle',
@@ -60,10 +83,15 @@ export function useMutation<
     N extends keyof D & string,
     O extends Operation,
     Bound extends boolean = false,
->(operation: Mutation<S, D, N, O, Bound>): MutationCallback<S, D, N, O, Bound> {
+    Input = OperationInput<D, N, O, Bound>,
+>(operation: Mutation<S, D, N, O, Bound, Input>): MutationCallback<S, D, N, O, Bound, Input> {
     const zero = useZero<S, undefined, ClientContext>();
-    type Input = OperationInput<D, N, O, Bound>;
-    const key = JSON.stringify([operation.name, operation.operation, operation.record?.[operation.contract.key]]);
+    const key = JSON.stringify([
+        operation.name,
+        operation.operation,
+        operation.record?.[operation.contract.key],
+        operation.nested,
+    ]);
     const [snapshot, setSnapshot] = useState({ zero, key, state: idle });
     const [formState, setFormState] = useState(() => ({
         zero,
@@ -189,32 +217,25 @@ export function useMutation<
             ...operation.form,
             values: currentForm.values,
             errors: currentState.fields,
-            setValue: <K extends keyof Input>(field: K, value: Input[K]) =>
+            setValue: <P extends FormPath<Input>>(field: P, value: FormValue<Input, P>) =>
                 setFormState((previous) => {
                     const base = previous.zero === zero && previous.key === key ? previous : currentForm;
-                    return { ...base, values: { ...base.values, [field]: value } };
+                    const values = structuredClone(base.values) as Record<string, unknown>;
+                    const parts = field.split('.');
+                    if (parts.some((part) => ['__proto__', 'prototype', 'constructor'].includes(part)))
+                        throw new InputError({ [field]: 'Invalid form field.' });
+                    let target: Record<string, unknown> = values;
+                    for (const [index, part] of parts.slice(0, -1).entries()) {
+                        target[part] ??= /^\d+$/.test(parts[index + 1]!) ? [] : {};
+                        target = target[part] as Record<string, unknown>;
+                    }
+                    target[parts.at(-1)!] = value;
+                    return { ...base, values: values as Partial<Input> };
                 }),
         },
         submit: (event?: { preventDefault(): void }) => {
             event?.preventDefault();
-            const validation: ModelContract['validation'] = operation.contract.validation;
-            const rulesByField: Readonly<Record<string, readonly string[]>> = validation[operation.operation] ?? {};
-            const required = new Set(
-                Object.entries(rulesByField)
-                    .filter(([, rules]) => rules.includes('required') && !rules.includes('sometimes'))
-                    .map(([field]) => field),
-            );
-            const values =
-                operation.record && operation.operation === 'update'
-                    ? Object.fromEntries(
-                          Object.entries(currentForm.values).filter(
-                              ([field, value]) =>
-                                  required.has(field) ||
-                                  JSON.stringify(value) !==
-                                      JSON.stringify((currentForm.defaults as Record<string, unknown>)[field]),
-                          ),
-                      )
-                    : currentForm.values;
+            const values = operation.formValues(currentForm.values, currentForm.defaults);
             return callback(values as Input);
         },
         reset: () => {

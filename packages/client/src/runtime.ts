@@ -21,7 +21,7 @@ export function createLaravelZero<S extends Schema, const D extends ContractMap>
     defaults: ClientDefaults = {},
 ) {
     const queries = createQueries(schema, definitions);
-    const mutators = createMutators<S, D>(definitions);
+    const mutators = createMutators<S, D>(schema, definitions);
     const models: Record<string, unknown> = Object.create(null);
     for (const [name, contract] of Object.entries(definitions)) {
         const methods: Record<string, unknown> = Object.create(null);

@@ -1,4 +1,5 @@
 // @vitest-environment jsdom
+import { nestedRuntime } from '../../../../tests/interop/nested';
 import { act, cleanup, fireEvent, render, renderHook, screen } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vite-plus/test';
 import { createLaravelZero } from '../runtime';
@@ -284,4 +285,76 @@ it('reports malformed cast data through the normal failure state and recovers af
     rerender();
     expect(result.current.status).toBe('success');
     expect(result.current.data[0]?.data.title).toEqual({ nested: true });
+});
+
+it('edits nested form paths and submits one mutation with prefixed server errors', async () => {
+    native.zero.mutate.mockReturnValue({
+        client: Promise.resolve({ type: 'success' }),
+        server: Promise.resolve({
+            type: 'error',
+            error: { type: 'app', message: 'Invalid', details: { fields: { 'comments.0.body': ['Rejected'] } } },
+        }),
+    });
+    const runtime = nestedRuntime();
+    const { result, rerender } = renderHook(
+        ({ nested }) =>
+            useMutation(nested ? runtime.models.Task.create().with('comments') : runtime.models.Task.create()),
+        { initialProps: { nested: true } },
+    );
+    act(() => {
+        result.current.form.setValue('title', 'Root');
+    });
+    // The union of the two operations is deliberately widened in this lifecycle test.
+    act(() => {
+        (result.current.form.setValue as (field: string, value: unknown) => void)('comments.0.body', 'Comment');
+    });
+    expect(result.current.form.values).toEqual({ title: 'Root', comments: [{ body: 'Comment' }] });
+    let call: ReturnType<typeof result.current>;
+    act(() => {
+        call = result.current.submit();
+    });
+    await act(async () => {
+        await call!.server;
+    });
+    expect(native.zero.mutate).toHaveBeenCalledTimes(1);
+    expect(native.zero.mutate.mock.lastCall![0].args.relations.comments.records[0].data).toEqual({ body: 'Comment' });
+    expect(result.current.form.errors).toEqual({ 'comments.0.body': ['Rejected'] });
+    rerender({ nested: false });
+    expect(result.current.form.values).toEqual({});
+});
+
+it('hydrates nested update defaults and submits changed child fields with their IDs', () => {
+    native.zero.mutate.mockReturnValue({ client: Promise.resolve({ type: 'success' }), server: new Promise(() => {}) });
+    const runtime = nestedRuntime();
+    const task = runtime.models.Task.query
+        .all()
+        .with('list')
+        .with('comments')
+        .decode([
+            {
+                id: 't',
+                title: 'Task',
+                list_id: 'l',
+                list: { id: 'l', name: 'List' },
+                comments: [{ id: 'c', task_id: 't', body: 'Old' }],
+            },
+        ])[0]!;
+    const { result } = renderHook(() => useMutation(task.update().with('list').with('comments')));
+    expect(result.current.defaultValues).toEqual({
+        title: 'Task',
+        list: { id: 'l', name: 'List' },
+        comments: [{ id: 'c', body: 'Old' }],
+    });
+    act(() => {
+        result.current.form.setValue('comments.0.body', 'New');
+    });
+    act(() => {
+        result.current.submit();
+    });
+    expect(native.zero.mutate.mock.lastCall![0].args).toMatchObject({
+        id: 't',
+        data: {},
+        relations: { comments: { operation: 'update', records: [{ id: 'c', data: { body: 'New' } }] } },
+    });
+    expect(native.zero.mutate.mock.lastCall![0].args.relations).not.toHaveProperty('list');
 });
