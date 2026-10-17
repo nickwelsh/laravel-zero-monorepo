@@ -3,7 +3,7 @@
 The repository root owns workspace tooling and cross-language contract tests.
 `packages/laravel` owns the `nickwelsh/laravel-zero` Composer package, its source,
 configuration, tests and PHP tools. `packages/client` owns the
-`@laravel-zero/client` npm package and its core and React exports.
+`@nickwelsh/laravel-zero` npm package and its core and React exports.
 
 `apps/docs` uses [`@nickwelsh/docs-base`](https://github.com/nickwelsh/docs-base)
 for the shared Waku/Fumadocs application. It owns site configuration, v0.x guides,
@@ -22,7 +22,7 @@ GitHub Release is published. It runs CI before publishing, builds the package,
 checks exports, and publishes with npm provenance using OIDC. No `NPM_TOKEN` or
 `NODE_AUTH_TOKEN` secret is required.
 
-The bootstrap package `@laravel-zero/client@0.0.0-placeholder.0` contains only
+The bootstrap package `@nickwelsh/laravel-zero@0.0.0-placeholder.0` contains only
 `package.json` and uses the `bootstrap` dist-tag. It exists to configure trusted
 publishing; it is not an installable client release. npm also assigned `latest`
 to this first version; the first real release will replace that tag.
@@ -33,7 +33,7 @@ settings, choose GitHub Actions and use these exact values:
 | Field                | Value                      |
 | -------------------- | -------------------------- |
 | Organization or user | `nickwelsh`                |
-| Repository           | `laravel-zero`             |
+| Repository           | `laravel-zero-monorepo`    |
 | Workflow filename    | `publish-npm.yml`          |
 | Environment name     | `npm`                      |
 | Allowed action       | Allow direct `npm publish` |
@@ -57,21 +57,26 @@ The PHP package is named `nickwelsh/laravel-zero`. Its current `composer.json` i
 under `packages/laravel`; Packagist.org requires it at the repository root.
 See [Packagist's package requirements](https://packagist.org/about).
 
-Two approaches are available before submitting the package:
+The source of truth is `nickwelsh/laravel-zero-monorepo`. The public
+`nickwelsh/laravel-zero` repository is an automated subtree split of
+`packages/laravel`; never edit the mirror directly. Its README sends contributors
+and issues back to the monorepo.
 
-- Keep this layout and automatically split `packages/laravel` into a public
-  distribution repository. Submit that repository to Packagist, connect the
-  Packagist GitHub integration, and mirror release tags. The split workflow needs
-  write access to that repository, usually a repository-scoped deploy key or
-  GitHub App token; this repository's `GITHUB_TOKEN` cannot push to another repo.
-- Make the monorepo root the Composer package, updating autoload, scripts, and
-  archive exclusions for the existing subdirectory layout. This avoids a second
-  repository but changes the Composer development and distribution setup.
+`Sync PHP mirror` (`.github/workflows/sync-php.yml`) updates the mirror's `main`
+branch after CI passes on the latest monorepo `main`. It can also be run manually.
+The npm release workflow calls the same workflow after CI passes to publish the
+matching release tag to the mirror. Pushes never force-update branches or tags.
 
-No PHP distribution repository, synchronization workflow, or Packagist submission
-has been created yet. Choose the layout first, validate the distributable with
-`composer validate --strict` and a consumer install, then tag the first release.
-Do not add a Composer `version` field: Packagist derives versions from Git tags.
+The repository secret `PHP_MIRROR_SSH_KEY` contains a deploy key with write access
+only to the PHP mirror. The normal `GITHUB_TOKEN` cannot push to another repository.
+Development files and the lockfile remain in mirror history but are excluded from
+Composer distribution archives by `packages/laravel/.gitattributes`.
+
+Submit `https://github.com/nickwelsh/laravel-zero` to Packagist.org as
+`nickwelsh/laravel-zero`, then enable Packagist's GitHub hook for that mirror.
+Packagist discovers versions from its tags; do not add a Composer `version` field.
+The PHP package and npm package share release tags from the monorepo. Neither
+publishing workflow changes package versions automatically.
 
 ## Development checks
 
@@ -175,7 +180,7 @@ for Vitest's Vite peer requirements. Vite+ and its core alias are pinned togethe
 
 ## Publishing
 
-Neither package is published by these commands or CI. npm packaging uses
-`packages/client`; Composer path repositories use `packages/laravel`. Packagist
-expects a repository with `composer.json` at its root, so publishing will need a
-subtree split or equivalent release repository. That release workflow is deferred.
+Publish releases from the source monorepo. npm publishes `packages/client` as
+`@nickwelsh/laravel-zero`; Packagist indexes the generated PHP mirror as
+`nickwelsh/laravel-zero`. See the release setup above and
+[the docs deployment guide](../apps/docs/README.md#cloudflare-workers-deployment).

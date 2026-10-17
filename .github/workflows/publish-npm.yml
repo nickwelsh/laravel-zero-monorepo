@@ -12,25 +12,17 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
-  verify:
-    uses: ./.github/workflows/ci.yml
-
-  publish:
-    needs: verify
+  release:
     runs-on: ubuntu-latest
-    environment: npm
-    permissions:
-      contents: read
-      id-token: write
+    outputs:
+      dist-tag: ${{ steps.version.outputs.dist-tag }}
     steps:
       - uses: actions/checkout@v4
-      - uses: pnpm/action-setup@v4
       - uses: actions/setup-node@v4
         with:
           node-version: '24'
-          registry-url: https://registry.npmjs.org
-      - run: npm install --global npm@11.20.0
       - name: Match release tag to package version
+        id: version
         env:
           RELEASE_TAG: ${{ github.event.release.tag_name }}
           PRERELEASE: ${{ github.event.release.prerelease }}
@@ -45,10 +37,41 @@ jobs:
           if (prerelease !== (process.env.PRERELEASE === 'true')) {
             throw new Error('GitHub prerelease status must match the package version.');
           }
-          appendFileSync(process.env.GITHUB_ENV, `NPM_DIST_TAG=${prerelease ? 'next' : 'latest'}\n`);
+          appendFileSync(process.env.GITHUB_OUTPUT, `dist-tag=${prerelease ? 'next' : 'latest'}\n`);
           JS
+
+  verify:
+    needs: release
+    uses: ./.github/workflows/ci.yml
+
+  mirror-php:
+    needs: verify
+    uses: ./.github/workflows/sync-php.yml
+    with:
+      ref: ${{ github.sha }}
+      tag: ${{ github.event.release.tag_name }}
+    secrets:
+      PHP_MIRROR_SSH_KEY: ${{ secrets.PHP_MIRROR_SSH_KEY }}
+
+  publish:
+    needs: [release, verify]
+    env:
+      NPM_DIST_TAG: ${{ needs.release.outputs.dist-tag }}
+    runs-on: ubuntu-latest
+    environment: npm
+    permissions:
+      contents: read
+      id-token: write
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+          registry-url: https://registry.npmjs.org
+      - run: npm install --global npm@11.20.0
       - run: pnpm install --frozen-lockfile
-      - run: pnpm --filter @laravel-zero/client build
+      - run: pnpm --filter @nickwelsh/laravel-zero build
       - run: pnpm package:check
       - run: npm publish --access public --provenance --tag "$NPM_DIST_TAG"
         working-directory: packages/client
