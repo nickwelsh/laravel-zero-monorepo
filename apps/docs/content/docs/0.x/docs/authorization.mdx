@@ -74,6 +74,17 @@ Laravel policy or gate for its operation; missing policies deny the write.
 FormRequests authorize and validate the payload separately, including foreign key
 association permissions. See [mutations](./mutations.mdx) for complete examples.
 
+## Column exposure
+
+Read authorization decides which rows a client may receive. Every selected column
+on those rows is exposed through Zero, so define [column privacy](./models.mdx#columns-and-privacy)
+as well. A nonempty Eloquent `$visible` list restricts columns by default;
+`ZeroColumns` can supply a separate explicit replication allowlist.
+
+Keep ownership fields used by `authorize()` and `fillFromContext()` in that
+allowlist. Generation fails if those fields or registered relationship keys are
+excluded. `$fillable` and mutation policies do not hide replicated columns.
+
 The browser's context supplies local values and optimistic fills. Laravel resolves
 a fresh `ZeroContext` through `zero.context_resolver`; derive custom tenant values
 only after checking the authenticated user's membership. Never trust a tenant ID

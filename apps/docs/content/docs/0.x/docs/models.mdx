@@ -27,6 +27,11 @@ class Task extends Model
 
     protected $fillable = ['user_id', 'list_id', 'title', 'done', 'completed_at'];
 
+    protected $visible = [
+        'id', 'user_id', 'list_id', 'title', 'done', 'completed_at',
+        'created_at', 'updated_at', 'deleted_at',
+    ];
+
     protected function casts(): array
     {
         return ['done' => 'boolean', 'completed_at' => 'immutable_datetime'];
@@ -89,11 +94,49 @@ optimistic fills; Laravel independently resolves authoritative context.
 
 ## Columns and privacy
 
-`$hidden` and `#[ZeroExclude(['secret'])]` add exclusions. `#[ZeroColumns([...])]`
-supplies an allowlist. `#[ZeroIncludeColumns([...])]` explicitly opts a column
-back in. Required excluded keys, ownership fields, timestamps, or relationship
-keys cause generation to fail. The same plan controls the generated client and
-PostgreSQL publication.
+One resolved column plan controls the generated TypeScript schema, record fields,
+and dedicated PostgreSQL publication. In the `Task` example above, a stored
+`secret` column is omitted because it is outside `$visible`. New database columns
+also stay excluded until explicitly allowed.
+
+Column controls apply in this order:
+
+| Control                                        | Effect                                                                                                                                                   |
+| ---------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Nonempty Eloquent `$visible`                   | Supplies the default database-column allowlist. An empty list allows all database columns before exclusions.                                             |
+| `#[ZeroColumns([...])]`                        | Replaces the `$visible` default with an explicit replication allowlist, even when `$visible` is nonempty. An empty `ZeroColumns` list allows no columns. |
+| Eloquent `$hidden` and `#[ZeroExclude([...])]` | Add exclusions within either allowlist. A column listed in both `$visible` and `$hidden` is excluded.                                                    |
+| `#[ZeroIncludeColumns([...])]`                 | Opts a non-visible, hidden, or excluded database column back in. It cannot expand an explicit `ZeroColumns` allowlist.                                   |
+
+For example, `#[ZeroIncludeColumns(['secret'])]` deliberately exposes `secret`
+despite its absence from `$visible`. If `ZeroColumns` is present, `secret` must
+also appear in that list. Listing a column in `ZeroColumns` alone does not
+override `$hidden` or `ZeroExclude`.
+
+Names in `$visible` that are not database columns, such as accessors or relations,
+are ignored. They do not generate computed fields or enable relationship includes.
+`ZeroColumns`, `ZeroExclude`, and `ZeroIncludeColumns` must name existing database
+columns; unknown names fail generation.
+
+### Required columns
+
+Allowlists must include the primary key, enabled timestamps and soft-delete
+timestamp, authorization and context-fill fields, and keys used by registered
+relationships. Fields used by declared filters and sorts must also be available.
+Laravel Zero fails generation when a required column is missing or excluded;
+it never silently adds that column to the replicated data.
+
+For the `Task` example, omitting `user_id` produces
+`Task: required column user_id is missing or excluded.` Keep it in the allowlist
+because both authorization and the context fill depend on it. Include
+`created_at`, `updated_at`, and `deleted_at` while timestamps and soft deletes
+are enabled, and `list_id` for the registered `list` relationship.
+
+`$fillable` controls mutation inputs independently of column exposure. A fillable
+column outside the resolved column plan is not caller-writable through Zero;
+allowing a column to replicate does not by itself make it writable.
+
+After changing these rules, [regenerate contracts and synchronize the publication](./replication.mdx#updating-column-visibility).
 
 `ZeroQuery` opts into `all` and `one`; `ZeroMutate` opts into individual CRUD
 operations. Related models may participate without top-level queries or mutations,

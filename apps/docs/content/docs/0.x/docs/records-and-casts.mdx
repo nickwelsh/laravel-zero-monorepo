@@ -15,6 +15,11 @@ Columns never collide with instance mutation methods. Included relations are
 recursively hydrated snapshots. Lazy relations run through the parent's authorized
 `one` query. They do not bypass visibility by querying a target table directly.
 
+Record fields and generated row types contain only the
+[resolved database columns](./models.mdx#columns-and-privacy). Nonempty `$visible`
+restricts that set by default. Eloquent accessors and appended properties named in
+`$visible` do not become client fields.
+
 All supported database dates/timestamps, including implicit lifecycle fields,
 become `Date`. Backed enum casts become backing-value literal unions. Boolean,
 integer, float, string, array/JSON, and object casts hydrate their public values;
