@@ -20,13 +20,13 @@ allowBuilds:
 # Vite+ wraps Vite with its own version while providing the Vite API Vitest expects.
 peerDependencyRules:
   allowedVersions:
-    '@vitest/mocker>vite': '0.3.3'
-    'vitest>vite': '0.3.3'
-    '@rolldown/plugin-babel>vite': '0.3.3'
-    '@vitejs/plugin-react>vite': '0.3.3'
-    'laravel-vite-plugin>vite': '0.3.3'
-    '@inertiajs/vite>vite': '0.3.3'
-    '@tailwindcss/vite>vite': '0.3.3'
+    '@vitest/mocker>vite': '1.2.0'
+    'vitest>vite': '1.2.0'
+    '@rolldown/plugin-babel>vite': '1.2.0'
+    '@vitejs/plugin-react>vite': '1.2.0'
+    'laravel-vite-plugin>vite': '1.2.0'
+    '@inertiajs/vite>vite': '1.2.0'
+    '@tailwindcss/vite>vite': '1.2.0'
 publicHoistPattern:
   - '@inertiajs/core'
 
