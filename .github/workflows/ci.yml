@@ -12,15 +12,15 @@ jobs:
   example-imports:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v7
-      - uses: shivammathur/setup-php@v2
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+      - uses: shivammathur/setup-php@eb7c497e18156a6bbabfef1d3a82760b9eda3962 # v2
         with:
           php-version: '8.5'
           extensions: pdo_sqlite, mbstring
           coverage: none
       - run: composer --working-dir=examples/todos install --no-dev --no-interaction --prefer-dist
       - run: php examples/todos/artisan wayfinder:generate --with-form
-      - uses: actions/upload-artifact@v7
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7
         with:
           name: example-imports
           path: |
@@ -63,23 +63,23 @@ jobs:
       ZERO_TEST_PG_USER: postgres
       ZERO_TEST_PG_PASSWORD: postgres
     steps:
-      - uses: actions/checkout@v7
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
       - name: Install spelling checker
         run: sudo apt-get update && sudo apt-get install --yes aspell aspell-en
-      - uses: shivammathur/setup-php@v2
+      - uses: shivammathur/setup-php@eb7c497e18156a6bbabfef1d3a82760b9eda3962 # v2
         with:
           php-version: ${{ matrix.php }}
           extensions: pdo_sqlite, pdo_pgsql, mbstring
           coverage: ${{ matrix.php == '8.3' && matrix.laravel == '^13.0' && 'xdebug' || 'none' }}
-      - uses: pnpm/action-setup@v6
-      - uses: actions/setup-node@v7
+      - uses: pnpm/action-setup@0977fd99725f1db4007ccb2928dbb4e90d06cc86 # v6
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7
         with:
           node-version: '24'
           cache: pnpm
       - run: composer --working-dir=packages/laravel validate --strict
       - run: composer --working-dir=packages/laravel update --with 'laravel/framework:${{ matrix.laravel }}' --with 'orchestra/testbench:${{ matrix.testbench }}' --no-interaction --prefer-dist
       - run: pnpm install --frozen-lockfile
-      - uses: actions/download-artifact@v8
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8
         with:
           name: example-imports
           path: examples/todos/resources/js
@@ -92,7 +92,7 @@ jobs:
         if: matrix.php == '8.3' && matrix.laravel == '^13.0'
         env:
           XDEBUG_MODE: coverage
-      - uses: actions/upload-artifact@v7
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7
         if: matrix.php == '8.3' && matrix.laravel == '^13.0'
         with:
           name: coverage
