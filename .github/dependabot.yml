@@ -1,0 +1,39 @@
+version: 2
+updates:
+  - package-ecosystem: npm
+    directory: /
+    schedule:
+      interval: weekly
+    groups:
+      vite-tooling:
+        patterns:
+          - vite
+          - vite-plus
+          - '@voidzero-dev/*'
+          - '@vitest/*'
+      docs:
+        patterns:
+          - '@nickwelsh/docs-base'
+          - fumadocs-*
+          - waku
+          - react
+          - react-dom
+          - react-server-dom-webpack
+  - package-ecosystem: composer
+    directories:
+      - /packages/laravel
+      - /examples/todos
+    schedule:
+      interval: weekly
+    groups:
+      composer:
+        patterns:
+          - '*'
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
+    groups:
+      github-actions:
+        patterns:
+          - '*'
