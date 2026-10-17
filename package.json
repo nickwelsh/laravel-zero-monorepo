@@ -34,7 +34,7 @@
         "@dreamsicle.io/stylelint-config-tailwindcss": "^1.2.2",
         "@rocicorp/zero": "1.10.0",
         "@testing-library/react": "^16.3.0",
-        "@types/node": "^22.0.0",
+        "@types/node": "^26.6.5",
         "@types/react": "^19.0.0",
         "@vitest/coverage-v8": "4.1.11",
         "eslint-plugin-no-only-tests": "^3.4.0",
