@@ -29,9 +29,9 @@ describe('native Zero optimistic CRUD', () => {
                 title: 'Local task',
             });
             expect(rows?.[0]?.created_at).toBe(create.args.now);
+            const record = Task.query().all().with('comments').decode(rows)[0]!;
             await zero.mutate(
-                Task.update().prepare({
-                    id: create.args.id,
+                record.update().prepare({
                     done: true,
                     completed_at: new Date(1700000000123),
                 }),
@@ -42,7 +42,7 @@ describe('native Zero optimistic CRUD', () => {
                 completed_at: 1700000000123,
                 title: 'Local task',
             });
-            await zero.mutate(Task.destroy().prepare({ id: create.args.id })).client;
+            await zero.mutate(record.destroy().prepare({})).client;
             expect(await zero.run(Task.query().all().request())).toEqual([]);
             expect(await zero.run(Task.query().all().onlyTrashed().request())).toHaveLength(1);
             await zero.mutate(Task.restore().prepare({ id: create.args.id })).client;
@@ -89,5 +89,35 @@ describe('relation authorization', () => {
         } finally {
             await zero.close();
         }
+    });
+});
+
+describe('native generated provider lifecycle', () => {
+    it('keeps equivalent context and replaces Zero when the tenant changes', async () => {
+        const { render, act, cleanup } = await import('@testing-library/react');
+        const { createZeroProvider, useZero } = await import('./react');
+        const Provider = createZeroProvider(schema, mutators, { cacheURL: null, kvStore: 'mem', logLevel: 'error' });
+        let current: Zero<typeof schema, undefined, ClientContext> | undefined;
+        function Probe() {
+            current = useZero<typeof schema, undefined, ClientContext>();
+            return null;
+        }
+        const tree = (tenant: string) => (
+            <Provider userID="alice" context={{ user_id: 'alice', tenant_id: tenant }}>
+                <Probe />
+            </Provider>
+        );
+        const host = render(tree('a'));
+        const first = current!;
+        expect(first).toBeDefined();
+        host.rerender(tree('a'));
+        expect(current).toBe(first);
+        host.rerender(tree('b'));
+        expect(current).not.toBe(first);
+        await act(async () => {
+            await Promise.resolve();
+        });
+        expect(first.closed).toBe(true);
+        cleanup();
     });
 });

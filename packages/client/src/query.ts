@@ -13,6 +13,7 @@ import type {
     ClientContext,
     ContractMap,
     ModelContract,
+    FilterExpression,
     QueryArgs,
     IncludeArgs,
     ModelRow,
@@ -25,17 +26,34 @@ import type {
 } from './contract';
 import type { IncludeSelection } from './include';
 import { includeSpec, type IncludedRow } from './include';
-import { columnValue, contextValue, fail, freeze, validateQueryArgs } from './validation';
+import { hydrate, type ModelInstance } from './record';
+import { createMutators, type ClientDefaults, type NativeMutators } from './mutation';
+import { columnValue, contextValue, fail, freeze, validateQueryArgs, filterComparison } from './validation';
 
 type Table<S extends Schema> = keyof S['tables'] & string;
 type RawRow = Record<string, unknown>;
-type WireRow<T> = T extends Date
-    ? number
-    : T extends readonly (infer V)[]
-      ? readonly WireRow<V>[]
-      : T extends object
-        ? { readonly [K in keyof T]: WireRow<T[K]> }
-        : T;
+type StoredValue<C extends ModelContract['columns'][string]> =
+    | (C['enum'] extends readonly (string | number)[]
+          ? C['enum'][number]
+          : C['type'] extends 'string'
+            ? string
+            : C['type'] extends 'number'
+              ? number
+              : C['type'] extends 'boolean'
+                ? boolean
+                : ReadonlyJSONValue)
+    | (C['nullable'] extends true ? null : never);
+type WireRow<D extends ContractMap, N extends keyof D & string, Row> = {
+    readonly [F in keyof Row]: F extends keyof D[N]['columns']
+        ? StoredValue<D[N]['columns'][F]>
+        : F extends keyof D[N]['relations'] & string
+          ? D[N]['relations'][F]['cardinality'] extends 'many'
+              ? Row[F] extends readonly (infer Child)[]
+                  ? readonly WireRow<D, RelatedName<D, N, F>, Child>[]
+                  : never
+              : WireRow<D, RelatedName<D, N, F>, Exclude<Row[F], undefined>> | undefined
+          : Row[F];
+};
 export type NativeQueries<S extends Schema, D extends ContractMap> = {
     [N in keyof D]: {
         [O in D[N]['queries'][number]]: CustomQuery<
@@ -113,13 +131,30 @@ function buildQuery(
                     value as never,
                 ),
             );
+        } else if (filter.kind === 'group' || filter.kind === 'callback') {
+            query = query.where((eb) => {
+                const expression = (node: FilterExpression): ReturnType<typeof eb.cmp> => {
+                    if (node.type !== 'simple')
+                        return node.type === 'or'
+                            ? eb.or(...node.conditions.map(expression))
+                            : eb.and(...node.conditions.map(expression));
+                    const operand = node.right.type === 'filterValue' ? value : node.right.value;
+                    return eb.cmp(
+                        node.left.name as never,
+                        (operand === null && node.op === '=' ? 'IS' : node.op) as never,
+                        operand as never,
+                    );
+                };
+                if (filter.kind === 'callback') return expression(filter.expression!);
+                const members = filter.members!.map((member) => {
+                    const [op, operand] = filterComparison(model, member, value, name);
+                    return eb.cmp(member.field as never, op as never, operand as never);
+                });
+                return filter.operator === 'or' ? eb.or(...members) : eb.and(...members);
+            });
         } else {
-            const operand = filter.kind === 'partial' ? `%${(value as string).replace(/[\\%_]/g, '\\$&')}%` : value;
-            query = query.where(
-                filter.field as never,
-                filter.kind === 'partial' ? 'ILIKE' : value === null ? 'IS' : '=',
-                operand as never,
-            );
+            const [operator, operand] = filterComparison(model, filter, value, name);
+            query = query.where(filter.field as never, operator as never, operand as never);
         }
     }
     if (!junction) {
@@ -162,6 +197,8 @@ export class Selection<
         readonly one: One,
         readonly args: Readonly<QueryArgs> = {},
         readonly pageSize?: number,
+        readonly defaults: ClientDefaults = {},
+        readonly mutators: NativeMutators<S, D> = createMutators<S, D>(definitions),
     ) {
         freeze(this.args);
     }
@@ -175,7 +212,17 @@ export class Selection<
 
     private copy<NextRow = Row>(args: QueryArgs, pageSize = this.pageSize): Selection<S, D, N, NextRow, One> {
         validateQueryArgs(this.definitions, this.contract, this.one ? 'one' : 'all', args);
-        return new Selection(this.schema, this.definitions, this.name, this.queries, this.one, args, pageSize);
+        return new Selection(
+            this.schema,
+            this.definitions,
+            this.name,
+            this.queries,
+            this.one,
+            args,
+            pageSize,
+            this.defaults,
+            this.mutators,
+        );
     }
 
     filter<F extends FilterName<D, N>>(
@@ -189,9 +236,15 @@ export class Selection<
         if (filter.value === undefined) delete filters[filter.name];
         else {
             const column = this.contract.columns[definition.field];
-            filters[filter.name] = column
-                ? columnValue(filter.value, column, filter.name, true)
-                : (filter.value as ReadonlyJSONValue);
+            filters[filter.name] =
+                definition.operator === 'dynamic' && column
+                    ? {
+                          operator: (filter.value as { operator: string }).operator,
+                          value: columnValue((filter.value as { value: unknown }).value, column, filter.name, true),
+                      }
+                    : column
+                      ? columnValue(filter.value, column, filter.name, true)
+                      : (filter.value as ReadonlyJSONValue);
         }
         return this.copy({ ...this.args, filters });
     }
@@ -257,7 +310,7 @@ export class Selection<
         QueryArgs,
         QueryArgs,
         S,
-        One extends true ? WireRow<Row> | undefined : WireRow<Row>,
+        One extends true ? WireRow<D, N, Row> | undefined : WireRow<D, N, Row>,
         ClientContext
     > {
         const operation = this.one ? 'one' : 'all';
@@ -272,32 +325,18 @@ export class Selection<
             QueryArgs,
             QueryArgs,
             S,
-            One extends true ? WireRow<Row> | undefined : WireRow<Row>,
+            One extends true ? WireRow<D, N, Row> | undefined : WireRow<D, N, Row>,
             ClientContext
         >;
     }
 
-    decode(raw: unknown): One extends true ? Row | undefined : readonly Row[] {
-        const decodeRow = (row: unknown, model: ModelContract): unknown => {
-            if (row === undefined || row === null) return undefined;
-            const decoded = { ...(row as Record<string, unknown>) };
-            for (const [name, column] of Object.entries(model.columns))
-                if (column.date && typeof decoded[name] === 'number') decoded[name] = new Date(decoded[name]);
-            for (const [name, relation] of Object.entries(model.relations))
-                if (name in decoded) {
-                    const target = this.definitions[relation.model]!;
-                    decoded[name] = Array.isArray(decoded[name])
-                        ? (decoded[name] as unknown[]).map((related) => decodeRow(related, target))
-                        : decodeRow(decoded[name], target);
-                }
-            return decoded;
-        };
-        return (
-            this.one
-                ? decodeRow(raw, this.contract)
-                : Array.isArray(raw)
-                  ? raw.map((row) => decodeRow(row, this.contract))
-                  : []
-        ) as One extends true ? Row | undefined : readonly Row[];
+    decode(
+        raw: unknown,
+    ): One extends true ? ModelInstance<S, D, N, Row> | undefined : readonly ModelInstance<S, D, N, Row>[] {
+        const decodeRow = (row: unknown) =>
+            hydrate(this.schema, this.definitions, this.name, this.queries, this.mutators, this.defaults, row);
+        return (this.one ? decodeRow(raw) : Array.isArray(raw) ? raw.map(decodeRow) : []) as One extends true
+            ? ModelInstance<S, D, N, Row> | undefined
+            : readonly ModelInstance<S, D, N, Row>[];
     }
 }

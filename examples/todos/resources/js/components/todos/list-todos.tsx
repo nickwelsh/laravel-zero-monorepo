@@ -51,7 +51,7 @@ export function ListTodos({ listId }: { listId: string }) {
             )}
             <ul className="space-y-2">
                 {todos.data.map((todo) => (
-                    <TodoRow key={todo.id} todo={todo} />
+                    <TodoRow key={todo.data.id} todo={todo} />
                 ))}
             </ul>
             {todos.infinite?.hasMore && (

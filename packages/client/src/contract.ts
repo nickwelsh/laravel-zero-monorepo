@@ -7,6 +7,7 @@ export interface Column {
     readonly enum: readonly (string | number)[] | null;
     readonly hasDefault: boolean;
     readonly default: ReadonlyJSONValue;
+    readonly cast?: 'boolean' | 'integer' | 'float' | 'string' | 'array' | 'object';
 }
 
 export interface Relation {
@@ -23,6 +24,33 @@ export type Operation = 'create' | 'update' | 'destroy' | 'restore' | 'force_del
 export type ClientContext = Readonly<Record<string, string | number | boolean | null>> & {
     readonly user_id: string | number | null;
 };
+
+export type FilterExpression =
+    | {
+          readonly type: 'simple';
+          readonly op: string;
+          readonly left: { readonly type: 'column'; readonly name: string };
+          readonly right:
+              | { readonly type: 'literal'; readonly value: ReadonlyJSONValue }
+              | { readonly type: 'filterValue' };
+      }
+    | { readonly type: 'and' | 'or'; readonly conditions: readonly FilterExpression[] };
+export interface FilterDefinition {
+    readonly kind:
+        | 'exact'
+        | 'partial'
+        | 'beginsWith'
+        | 'endsWith'
+        | 'operator'
+        | 'belongsTo'
+        | 'trashed'
+        | 'group'
+        | 'callback';
+    readonly field: string;
+    readonly operator?: ComparisonOperator | 'dynamic' | 'or' | 'and';
+    readonly members?: readonly FilterDefinition[];
+    readonly expression?: FilterExpression;
+}
 
 export interface ModelContract {
     readonly name: string;
@@ -46,15 +74,7 @@ export interface ModelContract {
         readonly updated: string | null;
         readonly deleted: string | null;
     };
-    readonly filters: Readonly<
-        Record<
-            string,
-            {
-                readonly kind: 'exact' | 'partial' | 'belongsTo' | 'trashed';
-                readonly field: string;
-            }
-        >
-    >;
+    readonly filters: Readonly<Record<string, FilterDefinition>>;
     readonly includes: readonly string[];
     readonly sorts: readonly string[];
     readonly defaultOrder: readonly (readonly [string, 'asc' | 'desc'])[];
@@ -68,33 +88,62 @@ type BaseValue<C extends Column> = C['date'] extends true
     ? Date
     : C['enum'] extends readonly (string | number)[]
       ? C['enum'][number]
-      : C['type'] extends 'string'
-        ? string
-        : C['type'] extends 'number'
+      : C extends { readonly cast: 'boolean' }
+        ? boolean
+        : C extends { readonly cast: 'integer' | 'float' }
           ? number
-          : C['type'] extends 'boolean'
-            ? boolean
-            : ReadonlyJSONValue;
+          : C extends { readonly cast: 'string' }
+            ? string
+            : C extends { readonly cast: 'array' | 'object' }
+              ? ReadonlyJSONValue
+              : C['type'] extends 'string'
+                ? string
+                : C['type'] extends 'number'
+                  ? number
+                  : C['type'] extends 'boolean'
+                    ? boolean
+                    : ReadonlyJSONValue;
 export type ColumnValue<C extends Column> = BaseValue<C> | (C['nullable'] extends true ? null : never);
+/** Augment with DTO shapes, including types emitted by Laravel Data/TypeScript Transformer. */
+export interface ModelTypes {}
+export type FieldValue<
+    D extends ContractMap,
+    N extends keyof D,
+    F extends keyof D[N]['columns'],
+> = N extends keyof ModelTypes
+    ? F extends keyof ModelTypes[N]
+        ? ModelTypes[N][F] | (D[N]['columns'][F]['nullable'] extends true ? null : never)
+        : ColumnValue<D[N]['columns'][F]>
+    : ColumnValue<D[N]['columns'][F]>;
 export type ModelRow<D extends ContractMap, N extends keyof D> = {
-    readonly [F in keyof D[N]['columns']]: ColumnValue<D[N]['columns'][F]>;
+    readonly [F in keyof D[N]['columns']]: FieldValue<D, N, F>;
 };
 export type RecordId<D extends ContractMap, N extends keyof D> = ColumnValue<
     D[N]['columns'][D[N]['key'] & keyof D[N]['columns']]
 > &
     (string | number);
+export type ComparisonOperator = '=' | '!=' | '<' | '<=' | '>' | '>=';
 export type FilterName<D extends ContractMap, N extends keyof D> = keyof D[N]['filters'] & string;
 export type FilterValue<D extends ContractMap, N extends keyof D, F extends FilterName<D, N>> =
     F extends FilterName<D, N>
-        ? D[N]['filters'][F]['kind'] extends 'trashed'
-            ? 'without' | 'with' | 'only'
-            : D[N]['filters'][F]['kind'] extends 'partial'
-              ? string
-              : D[N]['filters'][F]['kind'] extends 'belongsTo'
-                ? RecordId<D, RelatedName<D, N, D[N]['filters'][F]['field'] & keyof D[N]['relations'] & string>>
-                : D[N]['filters'][F]['field'] extends keyof D[N]['columns']
-                  ? ColumnValue<D[N]['columns'][D[N]['filters'][F]['field']]>
-                  : never
+        ? D[N]['filters'][F] extends { readonly kind: 'callback'; readonly field: '' }
+            ? boolean
+            : D[N]['filters'][F]['kind'] extends 'trashed'
+              ? 'without' | 'with' | 'only'
+              : D[N]['filters'][F]['kind'] extends 'partial' | 'beginsWith' | 'endsWith'
+                ? string
+                : D[N]['filters'][F]['kind'] extends 'belongsTo'
+                  ? RecordId<D, RelatedName<D, N, D[N]['filters'][F]['field'] & keyof D[N]['relations'] & string>>
+                  : D[N]['filters'][F] extends { readonly operator: 'dynamic' }
+                    ? {
+                          readonly operator: ComparisonOperator;
+                          readonly value: ColumnValue<
+                              D[N]['columns'][D[N]['filters'][F]['field'] & keyof D[N]['columns']]
+                          >;
+                      }
+                    : D[N]['filters'][F]['field'] extends keyof D[N]['columns']
+                      ? ColumnValue<D[N]['columns'][D[N]['filters'][F]['field']]>
+                      : never
         : never;
 export type Filter<D extends ContractMap, N extends keyof D, F extends FilterName<D, N> = FilterName<D, N>> =
     F extends FilterName<D, N>
@@ -134,16 +183,16 @@ type OptionalCreate<D extends ContractMap, N extends keyof D> = {
             : never;
 }[Writable<D, N>];
 export type CreateInput<D extends ContractMap, N extends keyof D> = {
-    [F in Exclude<Writable<D, N>, OptionalCreate<D, N>>]: ColumnValue<D[N]['columns'][F]>;
-} & { [F in OptionalCreate<D, N>]?: ColumnValue<D[N]['columns'][F]> } & {
+    [F in Exclude<Writable<D, N>, OptionalCreate<D, N>>]: FieldValue<D, N, F>;
+} & { [F in OptionalCreate<D, N>]?: FieldValue<D, N, F> } & {
     id?: string;
 };
 export type UpdateInput<D extends ContractMap, N extends keyof D> = {
     id: RecordId<D, N>;
 } & {
-    [F in RequiredFields<D, N, 'update'>]: ColumnValue<D[N]['columns'][F]>;
+    [F in RequiredFields<D, N, 'update'>]: FieldValue<D, N, F>;
 } & {
-    [F in Exclude<Writable<D, N>, RequiredFields<D, N, 'update'>>]?: ColumnValue<D[N]['columns'][F]>;
+    [F in Exclude<Writable<D, N>, RequiredFields<D, N, 'update'>>]?: FieldValue<D, N, F>;
 };
 export type MutationInput<D extends ContractMap, N extends keyof D, O extends Operation> = O extends 'create'
     ? CreateInput<D, N>

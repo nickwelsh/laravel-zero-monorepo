@@ -1,15 +1,15 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Models;
 
 use App\Http\Requests\SaveTodoListRequest;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
-use LaravelZero\Attributes\ZeroAuthorizeRelation;
 use LaravelZero\Attributes\ZeroMutate;
 use LaravelZero\Attributes\ZeroQuery;
-use LaravelZero\Attributes\ZeroServerFill;
 use LaravelZero\ContextField;
 use LaravelZero\Definition\ZeroDefinition;
 
@@ -20,24 +20,15 @@ use LaravelZero\Definition\ZeroDefinition;
  */
 #[ZeroQuery(['all', 'one'])]
 #[ZeroMutate('create', 'update', 'destroy')]
-#[ZeroAuthorizeRelation('memberships')]
-#[ZeroServerFill('user_id', ContextField::UserId)]
 class TodoList extends Model
 {
     use HasUuids;
 
     protected $fillable = ['name', 'user_id'];
 
-    protected static function booted(): void
-    {
-        static::created(function (self $list): void {
-            $list->memberships()->create(['user_id' => $list->user_id]);
-        });
-    }
-
     public static function zero(): ZeroDefinition
     {
-        return ZeroDefinition::make()
+        return ZeroDefinition::make()->authorizeRelation('memberships')->fillFromContext('user_id', ContextField::UserId)
             ->allowedIncludes(['todos'])
             ->allowedSorts(['name', 'created_at'])
             ->defaultSort('name')
@@ -59,5 +50,12 @@ class TodoList extends Model
     public function accessibleBy(User $user): bool
     {
         return $this->memberships()->where('user_id', $user->id)->exists();
+    }
+
+    protected static function booted(): void
+    {
+        static::created(function (self $list): void {
+            $list->memberships()->create(['user_id' => $list->user_id]);
+        });
     }
 }

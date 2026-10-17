@@ -7,23 +7,22 @@ import InputError from '@/components/input-error';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { TodoList } from '@/zero/generated';
-import type { TodoListRow } from '@/zero/generated';
+import type { TodoList } from '@/zero/generated';
 import { ListTodos } from './list-todos';
 import { commitMutation } from './mutations';
 
-export function ListPanel({ list, userId }: { list: TodoListRow; userId: number }) {
-    const destroy = useMutation(TodoList.destroy());
-    const update = useMutation(TodoList.update());
+export function ListPanel({ list, userId }: { list: TodoList; userId: number }) {
+    const destroy = useMutation(list.destroy());
+    const update = useMutation(list.update());
     const [renaming, setRenaming] = useState(false);
-    const [name, setName] = useState(list.name);
-    const owner = list.user_id === userId;
+    const [name, setName] = useState(list.data.name);
+    const owner = list.data.user_id === userId;
 
     return (
-        <section aria-label={`${list.name} todos`} className="min-w-0 space-y-6 rounded-xl border bg-card p-5">
+        <section aria-label={`${list.data.name} todos`} className="min-w-0 space-y-6 rounded-xl border bg-card p-5">
             <header className="flex items-start justify-between gap-3">
                 <div>
-                    <h2 className="text-xl font-semibold">{list.name}</h2>
+                    <h2 className="text-xl font-semibold">{list.data.name}</h2>
                     <p className="mt-1 text-sm text-muted-foreground">
                         {owner ? 'Your list' : 'Shared with you'} · Everyone with access can edit todos.
                     </p>
@@ -35,7 +34,7 @@ export function ListPanel({ list, userId }: { list: TodoListRow; userId: number 
                             variant="ghost"
                             aria-label="Rename list"
                             onClick={() => {
-                                setName(list.name);
+                                setName(list.data.name);
                                 setRenaming(true);
                             }}
                         >
@@ -47,8 +46,8 @@ export function ListPanel({ list, userId }: { list: TodoListRow; userId: number 
                             aria-label="Delete list"
                             disabled={destroy.state.status === 'pending'}
                             onClick={() => {
-                                if (window.confirm(`Delete “${list.name}” and all its todos?`))
-                                    void commitMutation(() => destroy({ id: list.id }));
+                                if (window.confirm(`Delete “${list.data.name}” and all its todos?`))
+                                    void commitMutation(() => destroy({}));
                             }}
                         >
                             <Trash2 className="size-4" />
@@ -62,7 +61,7 @@ export function ListPanel({ list, userId }: { list: TodoListRow; userId: number 
                     onSubmit={(event) => {
                         event.preventDefault();
                         void commitMutation(
-                            () => update({ id: list.id, name }),
+                            () => update({ name }),
                             () => setRenaming(false),
                         );
                     }}
@@ -80,11 +79,11 @@ export function ListPanel({ list, userId }: { list: TodoListRow; userId: number 
                     </Button>
                 </form>
             )}
-            <ListTodos listId={list.id} />
+            <ListTodos listId={list.data.id} />
             {owner && (
                 <div className="border-t pt-5">
                     <Form
-                        action={`/lists/${list.id}/share`}
+                        action={`/lists/${list.data.id}/share`}
                         method="post"
                         resetOnSuccess
                         onSuccess={() => toast.success('List shared.')}
@@ -92,10 +91,10 @@ export function ListPanel({ list, userId }: { list: TodoListRow; userId: number 
                     >
                         {({ processing, errors }) => (
                             <div className="space-y-2">
-                                <Label htmlFor={`share-${list.id}`}>Share with a registered user</Label>
+                                <Label htmlFor={`share-${list.data.id}`}>Share with a registered user</Label>
                                 <div className="flex gap-2">
                                     <Input
-                                        id={`share-${list.id}`}
+                                        id={`share-${list.data.id}`}
                                         name="email"
                                         type="email"
                                         placeholder="friend@example.com"

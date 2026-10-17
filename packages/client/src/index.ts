@@ -12,6 +12,7 @@ export type {
     ContractMap,
     ClientContext,
     ModelRow,
+    ModelTypes,
     RecordId,
     Filter,
     FilterName,
@@ -23,3 +24,6 @@ export type {
     QueryArgs,
     IncludeArgs,
 } from './contract';
+
+export { ModelSnapshot } from './record';
+export type { ModelInstance, RelationSelection } from './record';

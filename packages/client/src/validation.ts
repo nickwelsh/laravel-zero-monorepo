@@ -38,6 +38,31 @@ export function columnValue(value: unknown, column: Column, path: string, public
         if (!(value instanceof Date) || !Number.isFinite(value.getTime())) fail(path, 'Expected a valid Date.');
         return value.getTime();
     }
+    if (publicDate && column.cast) {
+        const expected =
+            column.cast === 'boolean'
+                ? 'boolean'
+                : column.cast === 'integer' || column.cast === 'float'
+                  ? 'number'
+                  : column.cast === 'string'
+                    ? 'string'
+                    : 'json';
+        if (expected === 'json') {
+            if (!isJson(value) || typeof value !== 'object' || value === null)
+                fail(path, 'Expected JSON array or object.');
+            if (column.type === 'string') value = JSON.stringify(value);
+        } else {
+            if (
+                typeof value !== expected ||
+                (typeof value === 'number' &&
+                    (!Number.isFinite(value) || (column.cast === 'integer' && !Number.isInteger(value))))
+            )
+                fail(path, 'Invalid cast value.');
+            if (column.type === 'string') value = column.cast === 'boolean' ? (value ? '1' : '0') : String(value);
+            else if (column.type === 'number') value = Number(value);
+            else if (column.type === 'boolean') value = value !== false && value !== 0 && value !== '' && value !== '0';
+        }
+    }
     const valid =
         column.type === 'json'
             ? isJson(value)
@@ -116,13 +141,18 @@ function validateRefinement(
     keys(filters, Object.keys(model.filters), 'filters');
     for (const [name, value] of Object.entries(filters)) {
         const filter = model.filters[name]!;
-        if (filter.kind === 'partial' && typeof value !== 'string') fail(name, 'Expected a string.');
+        if (['partial', 'beginsWith', 'endsWith'].includes(filter.kind) && typeof value !== 'string')
+            fail(name, 'Expected a string.');
         if (filter.kind === 'trashed') {
             if (!['without', 'with', 'only'].includes(value as string)) fail(name, 'Invalid trashed filter.');
         } else if (filter.kind === 'belongsTo') {
             const target = defs[model.relations[filter.field]!.model]!;
             columnValue(value, target.columns[target.key]!, name);
-        } else columnValue(value, model.columns[filter.field]!, name);
+        } else if (filter.kind === 'group') {
+            for (const member of filter.members ?? []) filterComparison(model, member, value, name);
+        } else if (filter.kind === 'callback' && filter.field === '') {
+            if (typeof value !== 'boolean') fail(name, 'Expected a boolean.');
+        } else filterComparison(model, filter, value, name);
     }
     const includes = object(args.include ?? {}, 'include');
     keys(includes, model.includes, 'include');
@@ -167,7 +197,9 @@ export function validateRules(model: ModelContract, operation: Operation, data: 
                   ? Array.from(value).length
                   : Array.isArray(value)
                     ? value.length
-                    : NaN;
+                    : value !== null && typeof value === 'object'
+                      ? Object.keys(value).length
+                      : NaN;
             const valid =
                 kind === 'min'
                     ? size >= Number(parameter)
@@ -195,4 +227,65 @@ export function validateRules(model: ModelContract, operation: Operation, data: 
             if (!valid) fail(field, `Failed ${rule} validation.`);
         }
     }
+}
+
+export function filterComparison(
+    model: ModelContract,
+    filter: ModelContract['filters'][string],
+    input: unknown,
+    name: string,
+): readonly [string, ReadonlyJSONValue] {
+    let value = input;
+    let operator: string = filter.operator ?? '=';
+    if (operator === 'dynamic') {
+        const expression = object(input, name);
+        keys(expression, ['operator', 'value'], name);
+        if (!['=', '!=', '<', '<=', '>', '>='].includes(expression.operator as string) || !('value' in expression))
+            fail(name, 'Expected an allowed operator and value.');
+        operator = expression.operator as string;
+        value = expression.value;
+    }
+    const wire = columnValue(value, model.columns[filter.field]!, name);
+    if (['partial', 'beginsWith', 'endsWith'].includes(filter.kind)) {
+        if (typeof wire !== 'string') fail(name, 'Expected a string.');
+        const escaped = wire.replace(/[\\%_]/g, '\\$&');
+        return [
+            'ILIKE',
+            `${filter.kind === 'beginsWith' ? '' : '%'}${escaped}${filter.kind === 'endsWith' ? '' : '%'}`,
+        ];
+    }
+    if (wire === null) {
+        if (operator !== '=' && operator !== '!=') fail(name, 'Null only supports equality operators.');
+        return [operator === '!=' ? 'IS NOT' : 'IS', null];
+    }
+    return [operator, wire];
+}
+
+export function decodeColumn(value: unknown, column: Column, field: string): unknown {
+    if (value === null || value === undefined) return value;
+    if (column.enum && !column.enum.includes(value as string | number)) fail(field, 'Invalid stored enum value.');
+    if (column.date && typeof value === 'number') {
+        const date = new Date(value);
+        if (!Number.isFinite(date.getTime())) fail(field, 'Invalid stored date.');
+        return date;
+    }
+    if (column.cast === 'boolean') return value !== false && value !== 0 && value !== '' && value !== '0';
+    if (column.cast === 'integer' || column.cast === 'float') {
+        const number = Number(value);
+        if (!Number.isFinite(number)) fail(field, 'Invalid stored numeric cast.');
+        return column.cast === 'integer' ? Math.trunc(number) : number;
+    }
+    if (column.cast === 'string') {
+        if (typeof value !== 'string' && typeof value !== 'number' && typeof value !== 'boolean')
+            fail(field, 'String casts require a scalar stored value.');
+        return typeof value === 'boolean' ? (value ? '1' : '') : String(value);
+    }
+    if ((column.cast === 'array' || column.cast === 'object') && typeof value === 'string') {
+        try {
+            return JSON.parse(value);
+        } catch {
+            fail(field, 'Invalid stored JSON.');
+        }
+    }
+    return structuredClone(value);
 }

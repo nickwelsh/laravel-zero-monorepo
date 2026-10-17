@@ -1,8 +1,9 @@
 // @vitest-environment jsdom
 import { act, cleanup, fireEvent, render, renderHook, screen } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vite-plus/test';
-import { Task } from '../../../../tests/interop/generated';
-import { useData, useFilter, useFilters, useMutation } from './index';
+import { createLaravelZero } from '../runtime';
+import { Task, schema, mutators, definitions } from '../../../../tests/interop/generated';
+import { useData, useFilter, useFilters, useMutation, createZeroProvider } from './index';
 
 const native = vi.hoisted(() => ({
     raw: [] as unknown,
@@ -10,6 +11,7 @@ const native = vi.hoisted(() => ({
     connection: { name: 'connected' },
     zero: { context: { user_id: 'alice' }, mutate: vi.fn() },
     query: vi.fn(),
+    provider: vi.fn(),
 }));
 vi.mock('@rocicorp/zero/react', () => ({
     useQuery: (request: unknown) => {
@@ -18,7 +20,10 @@ vi.mock('@rocicorp/zero/react', () => ({
     },
     useZero: () => native.zero,
     useConnectionState: () => native.connection,
-    ZeroProvider: ({ children }: { children: unknown }) => children,
+    ZeroProvider: (props: { children: unknown }) => {
+        native.provider(props);
+        return props.children;
+    },
 }));
 
 afterEach(() => {
@@ -165,4 +170,118 @@ describe('useMutation', () => {
         expect(result.current.state.fields).toEqual({ title: ['Too short'] });
         expect(call!.id).toMatch(/^[0-9a-f-]{36}$/);
     });
+});
+
+describe('generated provider binding', () => {
+    it('binds schema and mutators and stabilizes equivalent context while isolating tenant storage', () => {
+        const Provider = createZeroProvider(schema, mutators, { cacheURL: 'https://zero.example.test' });
+        const { rerender } = render(
+            <Provider userID="alice" context={{ user_id: 'alice', tenant_id: 'a' }}>
+                <span>ready</span>
+            </Provider>,
+        );
+        const first = native.provider.mock.lastCall![0];
+        expect(first.schema).toBe(schema);
+        expect(first.mutators).toBe(mutators);
+        rerender(
+            <Provider userID="alice" context={{ tenant_id: 'a', user_id: 'alice' }}>
+                <span>ready</span>
+            </Provider>,
+        );
+        expect(native.provider.mock.lastCall![0].context).toBe(first.context);
+        rerender(
+            <Provider userID="alice" context={{ user_id: 'alice', tenant_id: 'b' }}>
+                <span>ready</span>
+            </Provider>,
+        );
+        expect(native.provider.mock.lastCall![0].storageKey).not.toBe(first.storageKey);
+    });
+});
+
+describe('bound mutation forms', () => {
+    it('submits only edited fields, supports zero-argument delete, and resets on record changes', () => {
+        native.zero.mutate.mockReturnValue({
+            client: Promise.resolve({ type: 'success' }),
+            server: new Promise(() => {}),
+        });
+        const rows = Task.query()
+            .all()
+            .decode([
+                { id: 'a', title: 'Original', completed_at: null },
+                { id: 'b', title: 'Other', completed_at: null },
+            ]);
+        const { result, rerender } = renderHook(({ index }) => useMutation(rows[index]!.update()), {
+            initialProps: { index: 0 },
+        });
+        expect(result.current.defaultValues).toEqual({ title: 'Original', completed_at: null });
+        act(() => {
+            result.current.form.setValue('completed_at', new Date(1700000000000));
+            result.current.form.setValue('title', 'Original');
+        });
+        act(() => {
+            result.current.submit();
+        });
+        expect(native.zero.mutate.mock.lastCall![0].args).toMatchObject({
+            id: 'a',
+            data: { completed_at: 1700000000000 },
+        });
+        rerender({ index: 1 });
+        expect(result.current.form.values).toEqual({ title: 'Other', completed_at: null });
+        expect(result.current.state.status).toBe('idle');
+        const deletion = renderHook(() => useMutation(rows[0]!.destroy()));
+        act(() => {
+            deletion.result.current.submit();
+        });
+        expect(native.zero.mutate.mock.lastCall![0].args).toMatchObject({ id: 'a', data: {} });
+    });
+
+    it('projects lazy relationship data through the parent query', () => {
+        const task = Task.query()
+            .all()
+            .decode([{ id: 'a' }])[0]!;
+        native.raw = { id: 'a', list: { id: 'l', name: 'Accessible' } };
+        native.details = { type: 'complete' };
+        const { result } = renderHook(() => useData(task.list));
+        expect(result.current.data?.data.name).toBe('Accessible');
+        expect(native.query.mock.lastCall![0].query.queryName).toBe('Task.one');
+    });
+});
+
+describe('operator controls', () => {
+    it('keeps the operator and typed input together when building a query', () => {
+        function Host() {
+            const [filter, Control] = useFilter(Task, 'title_operator');
+            const selection = Task.query.all().filter(filter);
+            return (
+                <>
+                    <Control label="Title" />
+                    <output>{JSON.stringify(selection.args.filters)}</output>
+                </>
+            );
+        }
+        render(<Host />);
+        fireEvent.change(screen.getByLabelText('Title operator'), { target: { value: '!=' } });
+        fireEvent.change(screen.getByLabelText('Title'), { target: { value: 'hidden' } });
+        expect(screen.getByRole('status').textContent).toBe('{"title_operator":{"operator":"!=","value":"hidden"}}');
+    });
+});
+
+it('reports malformed cast data through the normal failure state and recovers after correction', () => {
+    const runtime = createLaravelZero(schema, {
+        ...definitions,
+        Task: {
+            ...definitions.Task,
+            columns: { ...definitions.Task.columns, title: { ...definitions.Task.columns.title, cast: 'array' } },
+        },
+    } as const);
+    native.raw = [{ id: 'a', title: '{broken' }];
+    native.details = { type: 'complete' };
+    const { result, rerender } = renderHook(() => useData(runtime.models.Task.query.all()));
+    expect(result.current.status).toBe('failure');
+    expect(result.current.data).toEqual([]);
+    expect(result.current.error?.message).toContain('JSON');
+    native.raw = [{ id: 'a', title: '{"nested":true}' }];
+    rerender();
+    expect(result.current.status).toBe('success');
+    expect(result.current.data[0]?.data.title).toEqual({ nested: true });
 });

@@ -1,4 +1,5 @@
-import { Task, TaskList } from './generated';
+import { Task, TaskList, schema, definitions } from './generated';
+import { createLaravelZero } from '@laravel-zero/client';
 import type { SelectionData } from '@laravel-zero/client';
 import {
     useData,
@@ -15,10 +16,10 @@ function useContracts() {
     const selection = Task.query().all().with('list');
     const data = useData(selection);
     const selected: SelectionData<typeof selection> = data.data;
-    const date: Date | null | undefined = data.data[0]?.completed_at;
-    const name: string | undefined = data.data[0]?.list?.name;
+    const date: Date | null | undefined = data.data[0]?.data.completed_at;
+    const name: string | undefined = data.data[0]?.data.list?.data.name;
     const one = useData(Task.query().one('id').with('list'));
-    const title: string | undefined = one.data?.title;
+    const title: string | undefined = one.data?.data.title;
     const mutation = useMutation(Task.create());
     mutation({ title: 'Hello', completed_at: new Date() });
     const BooleanControl: ComponentType<FilterControlProps<boolean>> = () => null;
@@ -55,7 +56,7 @@ function useContracts() {
             .all()
             .with('list', (list) => list.with('tasks', 2)),
     );
-    const nestedDate: Date | null | undefined = nested.data[0]?.list?.tasks[0]?.created_at;
+    const nestedDate: Date | null | undefined = nested.data[0]?.data.list?.data.tasks[0]?.data.created_at;
     Task.query()
         .all()
         .with('list', (list) => {
@@ -87,4 +88,49 @@ function useContracts() {
     // @ts-expect-error boolean filters do not accept string values
     Task.query().all().filter({ model: 'Task', name: 'done', value: 'false' });
     return { date, name, title };
+}
+
+function useBoundContracts() {
+    const task = useData(Task.query().all().with('list')).data[0]!;
+    const update = useMutation(task.update());
+    update({ completed_at: new Date() });
+    update.form.setValue('title', 'Changed');
+    const defaults: string | undefined = update.defaultValues.title;
+    const list = useData(task.list);
+    const name: string | undefined = list.data?.data.name;
+    useMutation(task.destroy()).submit();
+    // @ts-expect-error bound operations cannot change their record identity
+    update({ id: 'forged' });
+    // @ts-expect-error relations that were not included are not present in data
+    task.data.tags;
+    // @ts-expect-error columns live under data
+    task.title;
+    return { defaults, name };
+}
+
+declare module '@laravel-zero/client' {
+    interface ModelTypes {
+        Task: { preferences: { theme: 'light' | 'dark' } };
+    }
+}
+
+function useDtoContracts() {
+    const runtime = createLaravelZero(schema, {
+        ...definitions,
+        Task: {
+            ...definitions.Task,
+            writable: ['title', 'preferences'],
+            columns: { ...definitions.Task.columns, preferences: { ...definitions.Task.columns.title, type: 'json' } },
+        },
+    } as const);
+    const task = useData(runtime.models.Task.query.all()).data[0]!;
+    const theme: 'light' | 'dark' = task.data.preferences.theme;
+    task.update().prepare({ preferences: { theme: 'dark' } });
+    // @ts-expect-error DTO field types refine mutation inputs as well as result data
+    task.update().prepare({ preferences: { theme: 'unknown' } });
+    Task.query.all().filter({ model: 'Task', name: 'completed_after', value: new Date() });
+    Task.query.all().filter({ model: 'Task', name: 'title_operator', value: { operator: '!=', value: 'hidden' } });
+    // @ts-expect-error dynamic operators retain the column's value type
+    Task.query.all().filter({ model: 'Task', name: 'title_operator', value: { operator: '!=', value: 1 } });
+    return theme;
 }

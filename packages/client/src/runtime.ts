@@ -3,15 +3,16 @@ import type { ContractMap, ModelRow, RecordId } from './contract';
 import { Selection, createQueries } from './query';
 import { Mutation, createMutators, type ClientDefaults } from './mutation';
 
+type ModelQueries<S extends Schema, D extends ContractMap, N extends keyof D & string> = {
+    [O in D[N]['queries'][number]]: O extends 'all'
+        ? () => Selection<S, D, N, ModelRow<D, N>>
+        : (id: RecordId<D, N>) => Selection<S, D, N, ModelRow<D, N>, true>;
+};
 export type Model<S extends Schema, D extends ContractMap, N extends keyof D & string> = {
     readonly name: N;
     readonly definitions: D;
     readonly contract: D[N];
-    query(): {
-        [O in D[N]['queries'][number]]: O extends 'all'
-            ? () => Selection<S, D, N, ModelRow<D, N>>
-            : (id: RecordId<D, N>) => Selection<S, D, N, ModelRow<D, N>, true>;
-    };
+    readonly query: ModelQueries<S, D, N> & (() => ModelQueries<S, D, N>);
 } & { [O in D[N]['mutations'][number]]: () => Mutation<S, D, N, O> };
 
 export function createLaravelZero<S extends Schema, const D extends ContractMap>(
@@ -26,23 +27,29 @@ export function createLaravelZero<S extends Schema, const D extends ContractMap>
         const methods: Record<string, unknown> = Object.create(null);
         for (const operation of contract.mutations)
             methods[operation] = () => new Mutation(definitions, name, operation, mutators, defaults);
+        const operations: Record<string, unknown> = Object.create(null);
+        for (const operation of contract.queries)
+            operations[operation] =
+                operation === 'all'
+                    ? () => new Selection(schema, definitions, name, queries, false, {}, undefined, defaults, mutators)
+                    : (id: string | number) =>
+                          new Selection(
+                              schema,
+                              definitions,
+                              name,
+                              queries,
+                              true,
+                              { id },
+                              undefined,
+                              defaults,
+                              mutators,
+                          );
         models[name] = {
             name,
             definitions,
             contract,
             ...methods,
-            query: () => {
-                const operations: Record<string, unknown> = Object.create(null);
-                for (const operation of contract.queries)
-                    operations[operation] =
-                        operation === 'all'
-                            ? () => new Selection(schema, definitions, name, queries, false)
-                            : (id: string | number) =>
-                                  new Selection(schema, definitions, name, queries, true, {
-                                      id,
-                                  });
-                return operations;
-            },
+            query: Object.assign(() => operations, operations),
         };
     }
     return {

@@ -47,7 +47,7 @@ pnpm add /tmp/laravel-zero-pack/laravel-zero-client-0.1.0.tgz @rocicorp/zero@1.1
 ```
 
 Laravel discovers the service provider automatically. The default model discovery
-scans annotated classes under `app/Models`. Alternatively, list every participating
+scans classes with Zero attributes or a `zero()` definition under `app/Models`. Alternatively, list every participating
 model in `config/zero.php`, including relationship targets:
 
 ```php
@@ -68,14 +68,12 @@ use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\SoftDeletes;
-use LaravelZero\Attributes\{ZeroAuthorize, ZeroMutate, ZeroQuery, ZeroServerFill};
+use LaravelZero\Attributes\{ZeroMutate, ZeroQuery};
 use LaravelZero\ContextField;
 use LaravelZero\Definition\{AllowedFilter, ZeroDefinition};
 
 #[ZeroQuery(['all', 'one'])]
 #[ZeroMutate(['create', 'update', 'destroy', 'restore', 'force_delete'])]
-#[ZeroAuthorize('user_id', '=', ContextField::UserId)]
-#[ZeroServerFill('user_id', ContextField::UserId)]
 class Task extends Model
 {
     use HasUuids, SoftDeletes;
@@ -90,6 +88,8 @@ class Task extends Model
     public static function zero(): ZeroDefinition
     {
         return ZeroDefinition::make()
+            ->authorize('user_id', '=', ContextField::UserId)
+            ->fillFromContext('user_id', ContextField::UserId)
             ->allowedFilters([
                 'title', // String shorthand means escaped substring matching.
                 AllowedFilter::exact('done'),
@@ -117,19 +117,23 @@ include without exposing top-level queries or mutations:
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
-use LaravelZero\Attributes\ZeroAuthorize;
+use LaravelZero\Definition\ZeroDefinition;
 use LaravelZero\ContextField;
 
-#[ZeroAuthorize('user_id', '=', ContextField::UserId)]
 class TaskList extends Model
 {
     protected $table = 'lists';
     public $timestamps = false;
+
+    public static function zero(): ZeroDefinition
+    {
+        return ZeroDefinition::make()->authorize('user_id', '=', ContextField::UserId);
+    }
 }
 ```
 
-Use `#[ZeroPublic]` to explicitly allow public reads. Multiple `ZeroAuthorize`
-attributes combine with AND. Authorization applies to roots, included rows, nested
+Use `->publicReads()` to explicitly allow public reads. Multiple `->authorize()`
+constraints combine with AND. The former visibility/fill attributes remain supported for compatibility. Authorization applies to roots, included rows, nested
 includes, and relationship filters. Missing trusted context denies access.
 `ContextField::TenantId` is also supported; supply it from a custom server context
 resolver after verifying tenant membership. Configure that resolver with
@@ -138,11 +142,11 @@ optimistic fills; Laravel independently resolves authoritative context.
 
 ## Visibility through relationships
 
-Use `#[ZeroAuthorizeRelation('memberships')]` to require at least one related row
+Use `->authorizeRelation('memberships')` to require at least one related row
 that is visible under the related model's own authorization. For a shared list,
-annotate memberships with `#[ZeroAuthorize('user_id', '=', ContextField::UserId)]`
-and the list with `#[ZeroAuthorizeRelation('memberships')]`. Todos can then use
-`#[ZeroAuthorizeRelation('list')]` to inherit access to their parent list.
+configure memberships with `->authorize('user_id', '=', ContextField::UserId)`
+and the list with `->authorizeRelation('memberships')`. Todos can then use
+`->authorizeRelation('list')` to inherit access to their parent list.
 
 These predicates compile to correlated `EXISTS` queries in both Laravel and the
 native client. Multiple scalar and relationship authorization attributes combine
@@ -202,7 +206,7 @@ the operation's fields and `id`, its authenticated user, and `route('model')` on
 the HTTP endpoint. Dates arrive as ISO strings for Laravel validation.
 
 Create inputs require nonnullable writable fields without literal database
-defaults. Updates are patches. Repeated `ZeroServerFill` attributes fill fields
+defaults. Updates are patches. `->fillFromContext()` declarations fill fields
 on create from trusted context and remove them from caller-writable inputs.
 Primary keys, server fills, and lifecycle timestamps cannot be patched.
 Writes use Eloquent events and authoritative server timestamps; cancelled events
@@ -299,34 +303,31 @@ enabled so server context changes are reevaluated.
 
 ## React
 
-Create one Zero instance per authenticated user/tenant lifecycle and provide it:
+Generate the optional React wrapper:
+
+```sh
+php artisan zero:generate --react
+```
+
+This writes `generated.react.ts` beside the contracts and creates an editable
+`zero.config.ts` once. Set its public `cacheURL` and optional query/mutation URLs;
+regeneration never overwrites that configuration. Set `zero.react` to `true`
+to include the wrapper in ordinary generation and `--check`.
 
 ```tsx
-import { Zero } from '@rocicorp/zero';
-import type { ClientContext } from '@laravel-zero/client';
-import { ZeroProvider } from '@laravel-zero/client/react';
-import { schema, mutators } from './zero/generated';
+import { ZeroProvider } from './zero/generated.react';
 
-const zero = new Zero<typeof schema, undefined, ClientContext>({
-    schema,
-    mutators,
-    userID: String(user.id),
-    context: { user_id: user.id },
-    cacheURL: 'http://localhost:4848',
-    queryURL: 'http://localhost:8000/zero/query',
-    mutateURL: 'http://localhost:8000/zero/mutate',
-});
-
-// Inside your application root:
-<ZeroProvider zero={zero}>
+<ZeroProvider userID={String(user.id)} context={{ user_id: user.id }}>
     <App />
 </ZeroProvider>;
 ```
 
-Close the old instance with `await zero.close()` when its lifecycle ends. Replace
-it when the user or tenant changes; use a distinct `storageKey` for each tenant
-and remount the provider subtree. Do not reuse a client by mutating its context.
-Pass the trusted tenant value in local context when using tenant authorization.
+The wrapper binds schema/mutators, stabilizes equivalent scalar context objects,
+and replaces the native provider when user/context identity changes. Context
+also partitions local storage, including when switching tenants. An optional
+`auth` prop supports token renewal. The native provider owns construction and cleanup.
+The generic native `ZeroProvider` remains available from the React package for
+applications that manage Zero themselves.
 
 ```tsx
 import { useData, useFilter, useMutation } from '@laravel-zero/client/react';
@@ -344,7 +345,7 @@ function Tasks() {
                 Add task
             </button>
             {tasks.data.map((task) => (
-                <p key={task.id}>{task.title}</p>
+                <p key={task.data.id}>{task.data.title}</p>
             ))}
             <button disabled={tasks.infinite?.hasMore !== true} onClick={() => tasks.infinite?.loadMore()}>
                 Load more
@@ -393,12 +394,14 @@ The basic date control edits UTC; use a custom control for local-calendar semant
 
 Mutations return native `client` and `server` completion promises plus the stable
 record `id`. `state` reports pending/success/failure and field errors; `form`
-describes columns/writable fields, and `reset()` resets hook state. Handle both
+contains columns/writable fields, editable `values`, `setValue()`, and field `errors`.
+`submit()` submits form values, `defaultValues` provides writable defaults, and
+`reset()` resets form and mutation state. Bound update forms submit changed fields plus fields explicitly required by update rules. Handle both
 synchronous `InputError` from preparation and asynchronous mutation outcomes.
 
 ```ts
-const update = useMutation(Task.update());
-const call = update({ id, completed_at: new Date() });
+const update = useMutation(task.update());
+const call = update({ completed_at: new Date() });
 const result = await call.server;
 // result.type is 'success' or 'error'; inspect result.error on failure.
 ```
@@ -415,6 +418,18 @@ To customize the client clock or generated-ID provider, call
 `createLaravelZero(schema, definitions, {now: () => new Date(), id: (kind, model) => ...})`
 and use its returned models/queries/mutators together. Custom IDs must still match
 the declared UUID/ULID strategy. Native Zero options configure storage and transport.
+
+Records are model snapshots: columns and loaded relations live under `task.data`.
+Included relations contain snapshots too (`task.data.list?.data.name`). Instance
+methods such as `task.update()` and `task.destroy()` bind the record ID and remain
+callable when destructured. For lazy relations, `useData(task.list)` projects the
+relation through an authorized parent `one` query; targets need no top-level query.
+Lazy access requires the parent to opt into `one` and the relation to be an allowed include.
+Generated exports include both `Task` (instance type and model value) and `TaskRow`
+(the column-only type). Both `Task.query.all()` and `Task.query().all()` work.
+
+See [model API details](docs/model-api.md) for server scopes, richer filters,
+cast/DTO typing, form usage, and field-level write authorization.
 
 ## Supported constraints
 
@@ -433,7 +448,9 @@ the declared UUID/ULID strategy. Native Zero options configure storage and trans
   JavaScript numeric precision applies to bigint/decimal data.
 - Eloquent scopes, accessors, encrypted casts, appended properties, and arbitrary
   PHP logic do not execute on replicated reads. Keep sensitive stored columns
-  excluded and express visibility using Zero attributes.
+  excluded and express visibility using the Zero definition. Supported primitive casts are
+  hydrated, backed enums use literal unions, and DTO JSON shapes can use optional
+  TypeScript module augmentation without requiring Laravel Data.
 - Server-only validation, normalization, defaults, timestamps, and model events
   can reconcile optimistic values. Keep external event side effects after commit.
 

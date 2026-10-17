@@ -8,9 +8,10 @@ use App\Models\TodoList;
 use LaravelZero\Http\ContextResolver;
 
 return [
-    // Empty discovers explicitly annotated models under app/Models.
+    // Empty discovers models with Zero attributes or a zero() definition under app/Models.
     'models' => [TodoList::class, Todo::class, ListMembership::class],
     'output' => resource_path('js/zero/generated.ts'),
+    'react' => true,
     // Synchronize after successful, non-pretend PostgreSQL migration batches.
     'sync_publication_on_migrate' => true,
     'publication' => env('ZERO_PUBLICATION', 'laravel_zero'),

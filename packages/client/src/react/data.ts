@@ -1,8 +1,8 @@
 import { useQuery, useZero, useConnectionState, type UseQueryOptions } from '@rocicorp/zero/react';
-import type { Schema, QueryResultDetails, ConnectionState } from '@rocicorp/zero';
+import type { Schema, QueryResultDetails, ConnectionState, QueryRequest } from '@rocicorp/zero';
 import { useMemo, useState } from 'react';
-import type { ClientContext, ContractMap } from '../contract';
-import type { Selection } from '../query';
+import type { ClientContext, ModelContract, QueryArgs } from '../contract';
+import type { SelectionData } from '../query';
 
 export type DataStatus = 'idle' | 'loading' | 'refreshing' | 'failure' | 'stale' | 'success';
 export type RenderHandlers<T, R> = {
@@ -32,12 +32,20 @@ export interface Data<T> {
     render<R>(handlers: RenderHandlers<T, R>): R;
 }
 
-export function useData<S extends Schema, D extends ContractMap, N extends keyof D & string, Row, One extends boolean>(
-    selection: Selection<S, D, N, Row, One>,
-    options: UseQueryOptions = {},
-): Data<One extends true ? Row | undefined : readonly Row[]> {
-    type Result = One extends true ? Row | undefined : readonly Row[];
-    const zero = useZero<S, undefined, ClientContext>();
+export interface ReadSelection {
+    readonly key: string;
+    readonly contract: ModelContract;
+    readonly args: Readonly<QueryArgs>;
+    readonly pageSize?: number | undefined;
+    readonly one: boolean;
+    request(): unknown;
+    decode(raw: unknown): unknown;
+    limit?(limit: number): ReadSelection;
+}
+
+export function useData<Q extends ReadSelection>(selection: Q, options: UseQueryOptions = {}): Data<SelectionData<Q>> {
+    type Result = SelectionData<Q>;
+    const zero = useZero<Schema, undefined, ClientContext>();
     const connection = useConnectionState();
     const identity = zero;
     const key = selection.key;
@@ -52,19 +60,37 @@ export function useData<S extends Schema, D extends ContractMap, N extends keyof
     const requested = selection.pageSize === undefined ? selection.args.limit : Math.min(limit + 1, max);
     const request = useMemo(() => {
         if (selection.pageSize === undefined || selection.one) return selection.request();
-        return (selection as Selection<S, D, N, Row>).limit(requested!).request() as ReturnType<
-            typeof selection.request
-        >;
+        return selection.limit!(requested!).request();
     }, [selection, requested]);
-    const [raw, details] = useQuery(request, options);
+    const [raw, details] = useQuery(
+        request as QueryRequest<
+            string,
+            QueryArgs,
+            QueryArgs,
+            Schema,
+            Record<string, unknown> | undefined,
+            ClientContext
+        >,
+        options,
+    );
     const enabled = options.enabled ?? true;
-    const decoded = useMemo(() => selection.decode(raw), [raw, selection]);
+    const decodedResult = useMemo(() => {
+        try {
+            return { value: selection.decode(raw), error: undefined };
+        } catch (error) {
+            return {
+                value: selection.one ? undefined : [],
+                error: error instanceof Error ? error : new Error(String(error)),
+            };
+        }
+    }, [raw, selection]);
+    const decoded = decodedResult.value;
     const data = (
         selection.pageSize !== undefined && Array.isArray(decoded) ? decoded.slice(0, limit) : decoded
     ) as Result;
     const complete = details.type === 'complete';
     const hasData = Array.isArray(data) ? data.length > 0 : data !== undefined;
-    const error = details.type === 'error' ? new Error(details.error.message) : undefined;
+    const error = decodedResult.error ?? (details.type === 'error' ? new Error(details.error.message) : undefined);
     const status: DataStatus = !enabled
         ? 'idle'
         : error

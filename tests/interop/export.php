@@ -52,6 +52,9 @@ $capsule->schema()->create('comments', function (Blueprint $table) {
 });
 Container::setInstance($capsule->getContainer());
 $registry = new ModelRegistry([Task::class, TaskList::class, Tag::class, Comment::class]);
+if (($argv[3] ?? null) === 'scope') {
+    $registry->get('Task')->definition->enforceServerScope(fn (\LaravelZero\Query\ZQLBuilder $query) => $query->where(fn (\LaravelZero\Query\ZeroOperator $op) => $op->or($op->cmp('done', true), $op->cmp('title', 'shared'))));
+}
 if (($argv[1] ?? null) === 'generate') {
     echo (new TypeScriptGenerator)->generate($registry);
 } else {

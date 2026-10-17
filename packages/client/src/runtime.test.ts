@@ -55,7 +55,7 @@ describe('generated models', () => {
                 list: { id: 'l', tasks: [{ id: 'b', created_at: 1700000000000 }] },
             },
         ]);
-        expect(rows[0]?.list?.tasks[0]?.created_at).toEqual(new Date(1700000000000));
+        expect(rows[0]?.data.list?.data.tasks[0]?.data.created_at).toEqual(new Date(1700000000000));
     });
     it('validates portable FormRequest rules before enqueueing', () => {
         const runtime = createLaravelZero(schema, {
@@ -117,8 +117,8 @@ describe('generated models', () => {
             list: { id: 'l', name: 'List' },
         };
         const decoded = Task.query().all().with('list').decode([row]);
-        expect(decoded[0]?.created_at).toEqual(new Date(1700000000000));
-        expect(decoded[0]?.completed_at).toBeNull();
+        expect(decoded[0]?.data.created_at).toEqual(new Date(1700000000000));
+        expect(decoded[0]?.data.completed_at).toBeNull();
         expect(row.created_at).toBe(1700000000000);
     });
 
@@ -143,6 +143,53 @@ describe('generated models', () => {
         expect(() => operation.prepare({} as never)).toThrow(/required/);
     });
 
+    it('hydrates collision-safe snapshots and binds destructured mutations to their ID', () => {
+        const runtime = createLaravelZero(schema, definitions, { now: () => new Date(123) });
+        const row = runtime.models.Task.query()
+            .all()
+            .with('list')
+            .decode([
+                {
+                    id: 'a',
+                    title: 'Original',
+                    done: false,
+                    completed_at: null,
+                    created_at: 1700000000000,
+                    list: { id: 'l', name: 'List' },
+                },
+            ])[0]!;
+        const { update, destroy, data, list } = row;
+        expect(data.list?.data.name).toBe('List');
+        expect(data.created_at).toBeInstanceOf(Date);
+        expect(update().defaultValues).toEqual({ title: 'Original', done: false, completed_at: null });
+        expect(update().prepare({ title: 'Changed' }).args).toEqual({ id: 'a', data: { title: 'Changed' }, now: 123 });
+        expect(destroy().prepare({}).args.id).toBe('a');
+        expect(() => update().prepare({ id: 'forged', title: 'Changed' } as never)).toThrow(/protected/);
+        expect(list.request().args).toEqual({ id: 'a', include: { list: {} } });
+        expect(list.decode({ id: 'a', list: { id: 'l', name: 'Lazy' } })?.data.name).toBe('Lazy');
+        expect(Object.isFrozen(row)).toBe(true);
+        expect(Object.isFrozen(data)).toBe(true);
+    });
+
+    it('keeps column names separate from record methods and clones JSON values', () => {
+        const runtime = createLaravelZero(schema, {
+            ...definitions,
+            Task: {
+                ...definitions.Task,
+                columns: {
+                    ...definitions.Task.columns,
+                    update: { ...definitions.Task.columns.title },
+                    preferences: { ...definitions.Task.columns.title, type: 'json' },
+                },
+            },
+        } as const);
+        const raw = { id: 'a', update: 'column', preferences: { theme: 'dark' } };
+        const row = runtime.models.Task.query().all().decode([raw])[0]!;
+        expect(row.data.update).toBe('column');
+        expect(typeof row.update).toBe('function');
+        expect(row.data.preferences).not.toBe(raw.preferences);
+    });
+
     it('rejects runtime calls that bypass generated TypeScript restrictions', () => {
         expect(() =>
             Task.query()
@@ -160,5 +207,50 @@ describe('generated models', () => {
                 .all()
                 .filter({ model: 'Other', name: 'title', value: 'x' } as never),
         ).toThrow(/model/i);
+    });
+});
+
+describe('cast hydration', () => {
+    it('hydrates supported primitive and JSON casts and serializes public mutation values', () => {
+        const text = definitions.Task.columns.title;
+        const runtime = createLaravelZero(schema, {
+            ...definitions,
+            Task: {
+                ...definitions.Task,
+                writable: ['title', 'preferences', 'count', 'flag', 'status'],
+                validation: { update: { flag: ['boolean'], preferences: ['max:2'] } },
+                columns: {
+                    ...definitions.Task.columns,
+                    preferences: { ...text, nullable: true, cast: 'array' },
+                    count: { ...text, cast: 'integer' },
+                    flag: { ...text, cast: 'boolean' },
+                    status: { ...text, enum: ['draft', 'published'] },
+                },
+            },
+        } as const);
+        const raw = {
+            id: 'a',
+            title: 'Title',
+            preferences: '{"theme":"dark"}',
+            count: '42',
+            flag: '0',
+            status: 'draft',
+        };
+        const row = runtime.models.Task.query().all().decode([raw])[0]!;
+        expect(row.data.preferences).toEqual({ theme: 'dark' });
+        expect(row.data.count).toBe(42);
+        expect(row.data.flag).toBe(false);
+        const request = row
+            .update()
+            .prepare({ preferences: { theme: 'light' }, count: 12, flag: true, status: 'published' });
+        expect(request.args.data).toEqual({
+            preferences: '{"theme":"light"}',
+            count: '12',
+            flag: '1',
+            status: 'published',
+        });
+        expect(() => row.update().prepare({ status: 'invalid' } as never)).toThrow(/value/);
+        expect(() => row.update().prepare({ count: 1.5 })).toThrow(/cast/);
+        expect(raw.preferences).toBe('{"theme":"dark"}');
     });
 });

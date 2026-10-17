@@ -12,7 +12,7 @@ import {
 import { ulid } from 'ulid';
 import { v7 as uuidv7 } from 'uuid';
 import type { ClientContext, ContractMap, ModelContract, MutationInput, Operation, RecordId } from './contract';
-import { columnValue, contextValue, fail, freeze, keys, object, validateRules } from './validation';
+import { columnValue, contextValue, fail, freeze, keys, object, validateRules, decodeColumn } from './validation';
 
 export type MutationArgs<ID extends string | number = string | number> = {
     id: ID;
@@ -23,6 +23,12 @@ export type ClientDefaults = {
     now?: () => Date;
     id?: (kind: 'uuid' | 'ulid', model: ModelContract) => string;
 };
+export type OperationInput<
+    D extends ContractMap,
+    N extends keyof D,
+    O extends Operation,
+    Bound extends boolean,
+> = Bound extends true ? Omit<MutationInput<D, N, O>, 'id'> & { readonly id?: never } : MutationInput<D, N, O>;
 export type NativeMutators<S extends Schema, D extends ContractMap> = AnyMutatorRegistry & {
     [N in keyof D]: {
         [O in D[N]['mutations'][number]]: Mutator<MutationArgs<RecordId<D, N>>, S, ClientContext>;
@@ -96,17 +102,37 @@ function validateMutation(model: ModelContract, operation: Operation, args: Muta
             const column = model.columns[field]!;
             if (!(field in data) && !column.nullable && !column.hasDefault) fail(field, 'This field is required.');
         }
-    validateRules(model, operation, { ...data, id: args.id });
+    const publicData = Object.fromEntries(
+        Object.entries(data).map(([field, value]) => [field, decodeColumn(value, model.columns[field]!, field)]),
+    );
+    validateRules(model, operation, { ...publicData, id: args.id });
 }
 
-export class Mutation<S extends Schema, D extends ContractMap, N extends keyof D & string, O extends Operation> {
+export class Mutation<
+    S extends Schema,
+    D extends ContractMap,
+    N extends keyof D & string,
+    O extends Operation,
+    Bound extends boolean = false,
+> {
     constructor(
         readonly definitions: D,
         readonly name: N,
         readonly operation: O,
         readonly mutators: NativeMutators<S, D>,
         readonly defaults: ClientDefaults,
+        readonly record?: Readonly<Record<string, unknown>>,
     ) {}
+    get defaultValues(): Partial<OperationInput<D, N, O, Bound>> {
+        if (!this.record || this.operation !== 'update') return {};
+        return structuredClone(
+            Object.fromEntries(
+                this.contract.writable
+                    .filter((field) => field in this.record!)
+                    .map((field) => [field, this.record![field]]),
+            ),
+        ) as Partial<OperationInput<D, N, O, Bound>>;
+    }
     get contract(): D[N] {
         return this.definitions[this.name]!;
     }
@@ -117,17 +143,21 @@ export class Mutation<S extends Schema, D extends ContractMap, N extends keyof D
         };
     }
 
-    prepare(input: MutationInput<D, N, O>): MutateRequest<MutationArgs<RecordId<D, N>>, S, ClientContext> {
+    prepare(input: OperationInput<D, N, O, Bound>): MutateRequest<MutationArgs<RecordId<D, N>>, S, ClientContext> {
         const value = object(input, 'input');
         keys(
             value,
-            [...(this.operation === 'create' || this.operation === 'update' ? this.contract.writable : []), 'id'],
+            [
+                ...(this.operation === 'create' || this.operation === 'update' ? this.contract.writable : []),
+                ...(this.record ? [] : ['id']),
+            ],
             'input',
         );
         const data: Record<string, ReadonlyJSONValue> = {};
         for (const [field, item] of Object.entries(value))
             if (field !== 'id') data[field] = columnValue(item, this.contract.columns[field]!, field, true);
         const id =
+            this.record?.[this.contract.key] ??
             value.id ??
             (this.operation === 'create' && this.contract.idGenerator
                 ? (this.defaults.id ?? ((kind) => (kind === 'uuid' ? uuidv7() : ulid())))(

@@ -4,6 +4,7 @@ import {
     useContext,
     useEffect,
     useMemo,
+    useState,
     useSyncExternalStore,
     type ComponentType,
     type ReactNode,
@@ -53,11 +54,19 @@ function binding(model: ModelContract, name: string, options: FilterOptions<unkn
     if (!filter) fail('filter', `Unknown filter ${name}.`);
     const column = model.columns[filter.field];
     const kind =
-        filter.kind === 'belongsTo' || filter.kind === 'trashed'
-            ? filter.kind
-            : column?.date
-              ? 'date'
-              : (column?.type ?? 'string');
+        filter.kind === 'callback' && filter.field === ''
+            ? 'boolean'
+            : filter.kind === 'belongsTo' || filter.kind === 'trashed'
+              ? filter.kind
+              : column?.date
+                ? 'date'
+                : column?.cast === 'boolean'
+                  ? 'boolean'
+                  : column?.cast === 'integer' || column?.cast === 'float'
+                    ? 'number'
+                    : column?.cast === 'array' || column?.cast === 'object'
+                      ? 'json'
+                      : (column?.type ?? 'string');
     let snapshot: Snapshot = {
         input: options.initialValue,
         query: options.initialValue,
@@ -90,7 +99,11 @@ function binding(model: ModelContract, name: string, options: FilterOptions<unkn
     const Control = ({ label = name, disabled }: ControlProps) => {
         const registry = useContext(Config);
         const value = useSyncExternalStore(store.subscribe, store.get, store.get).input;
-        const Component = options.component ?? (registry[kind] as AnyControl | undefined) ?? DefaultControl;
+        const Component =
+            options.component ??
+            (filter.operator === 'dynamic'
+                ? OperatorControl
+                : ((registry[kind] as AnyControl | undefined) ?? DefaultControl));
         const props = {
             value,
             onChange: change,
@@ -103,6 +116,42 @@ function binding(model: ModelContract, name: string, options: FilterOptions<unkn
         return createElement(Component, props);
     };
     return { ...store, Control };
+}
+
+function OperatorControl({
+    value,
+    onChange,
+    ...props
+}: FilterControlProps<unknown> & { kind?: string; column?: ModelContract['columns'][string] | undefined }) {
+    const input = value as { operator: string; value: unknown } | undefined;
+    const [selected, setSelected] = useState(input?.operator ?? '=');
+    const operator = input?.operator ?? selected;
+    const controls = useContext(Config);
+    const Component = (controls[props.kind as keyof FilterControls] as AnyControl | undefined) ?? DefaultControl;
+    return (
+        <fieldset>
+            <select
+                aria-label={`${props.label} operator`}
+                disabled={props.disabled}
+                value={operator}
+                onChange={(event) => {
+                    setSelected(event.target.value);
+                    if (input !== undefined) onChange({ operator: event.target.value, value: input.value });
+                }}
+            >
+                {['=', '!=', '<', '<=', '>', '>='].map((op) => (
+                    <option key={op} value={op}>
+                        {op}
+                    </option>
+                ))}
+            </select>
+            <Component
+                {...props}
+                value={input?.value}
+                onChange={(next) => onChange(next === undefined ? undefined : { operator, value: next })}
+            />
+        </fieldset>
+    );
 }
 
 function DefaultControl({

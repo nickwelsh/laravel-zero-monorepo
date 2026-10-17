@@ -12,7 +12,7 @@ export function TodosWorkspace({ userId }: { userId: number }) {
     const create = useMutation(TodoList.create());
     const [name, setName] = useState('');
     const [selectedId, setSelectedId] = useState<string | undefined>();
-    const selected = lists.data.find((list) => list.id === selectedId) ?? lists.data[0];
+    const selected = lists.data.find((list) => list.data.id === selectedId) ?? lists.data[0];
     const online = lists.connection.name === 'connected';
 
     return (
@@ -67,14 +67,14 @@ export function TodosWorkspace({ userId }: { userId: number }) {
                     <nav aria-label="Choose a list" className="space-y-1">
                         {lists.data.map((list) => (
                             <Button
-                                key={list.id}
-                                variant={list.id === selected?.id ? 'secondary' : 'ghost'}
+                                key={list.data.id}
+                                variant={list.data.id === selected?.data.id ? 'secondary' : 'ghost'}
                                 className="w-full justify-start"
-                                aria-current={list.id === selected?.id ? 'true' : undefined}
-                                onClick={() => setSelectedId(list.id)}
+                                aria-current={list.data.id === selected?.data.id ? 'true' : undefined}
+                                onClick={() => setSelectedId(list.data.id)}
                             >
-                                <span className="truncate">{list.name}</span>
-                                {list.user_id !== userId && (
+                                <span className="truncate">{list.data.name}</span>
+                                {list.data.user_id !== userId && (
                                     <span className="ml-auto text-xs text-muted-foreground">Shared</span>
                                 )}
                             </Button>
@@ -87,7 +87,7 @@ export function TodosWorkspace({ userId }: { userId: number }) {
                     )}
                 </aside>
                 {selected ? (
-                    <ListPanel key={selected.id} list={selected} userId={userId} />
+                    <ListPanel key={selected.data.id} list={selected} userId={userId} />
                 ) : (
                     <section className="rounded-xl border border-dashed p-10 text-center">
                         <h2 className="font-medium">Your next list starts here</h2>
