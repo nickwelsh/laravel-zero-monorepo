@@ -1,11 +1,14 @@
 name: Deploy docs
 
 on:
-  workflow_run:
-    workflows: [CI]
-    branches: [main]
-    types: [completed]
-  workflow_dispatch:
+  workflow_call:
+    inputs:
+      ref:
+        required: true
+        type: string
+      tag:
+        required: true
+        type: string
 
 permissions:
   contents: read
@@ -15,10 +18,39 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
+  await-publication:
+    runs-on: ubuntu-latest
+    timeout-minutes: 65
+    steps:
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - name: Wait for npm approval
+        env:
+          RELEASE_TAG: ${{ inputs.tag }}
+        run: |
+          node --input-type=module <<'JS'
+          import { setTimeout } from 'node:timers/promises';
+          const version = process.env.RELEASE_TAG.slice(1);
+          for (let attempt = 0; attempt < 60; attempt++) {
+            try {
+              const response = await fetch('https://registry.npmjs.org/@nickwelsh%2flaravel-zero/latest', {
+                signal: AbortSignal.timeout(15_000),
+              });
+              if (!response.ok) throw new Error(`npm returned ${response.status}`);
+              const published = await response.json();
+              if (published.version === version) process.exit(0);
+              console.log(`Waiting for ${version} to be approved as latest (currently ${published.version}).`);
+            } catch (error) {
+              console.log(`Cannot confirm npm publication: ${error.message}`);
+            }
+            await setTimeout(60_000);
+          }
+          throw new Error('Approve the staged npm version, then rerun failed jobs to deploy docs.');
+          JS
+
   deploy:
-    if: >-
-      (github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/main') ||
-      (github.event.workflow_run.conclusion == 'success' && github.event.workflow_run.event == 'push')
+    needs: await-publication
     runs-on: ubuntu-latest
     environment:
       name: docs
@@ -28,11 +60,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
-          ref: ${{ github.event.workflow_run.head_sha || github.sha }}
-      - name: Check that this is still the latest main commit
-        run: |
-          git fetch --no-tags --depth=1 origin main
-          test "$(git rev-parse HEAD)" = "$(git rev-parse FETCH_HEAD)"
+          ref: ${{ inputs.ref }}
       - uses: pnpm/action-setup@v4
       - uses: actions/setup-node@v4
         with:
@@ -41,6 +69,22 @@ jobs:
       - run: pnpm install --frozen-lockfile
       - run: pnpm docs:build
       - run: pnpm --filter @laravel-zero/docs deploy:check
+      - name: Confirm docs still match the current npm release
+        env:
+          RELEASE_TAG: ${{ inputs.tag }}
+        run: |
+          node --input-type=module <<'JS'
+          import { readFileSync } from 'node:fs';
+          const { version } = JSON.parse(readFileSync('packages/client/package.json', 'utf8'));
+          const response = await fetch('https://registry.npmjs.org/@nickwelsh%2flaravel-zero/latest', {
+            signal: AbortSignal.timeout(15_000),
+          });
+          if (!response.ok) throw new Error(`npm returned ${response.status}`);
+          const published = await response.json();
+          if (version.includes('-') || process.env.RELEASE_TAG !== `v${version}` || published.version !== version) {
+            throw new Error('Refusing to replace production docs with a version other than the current stable npm release.');
+          }
+          JS
       - run: pnpm --filter @laravel-zero/docs run deploy
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}

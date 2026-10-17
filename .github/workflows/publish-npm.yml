@@ -73,5 +73,13 @@ jobs:
       - run: pnpm install --frozen-lockfile
       - run: pnpm --filter @nickwelsh/laravel-zero build
       - run: pnpm package:check
-      - run: npm publish --access public --provenance --tag "$NPM_DIST_TAG"
+      - run: npm stage publish --access public --provenance --tag "$NPM_DIST_TAG"
         working-directory: packages/client
+
+  docs:
+    needs: [release, publish, mirror-php]
+    if: needs.release.outputs.dist-tag == 'latest'
+    uses: ./.github/workflows/deploy-docs.yml
+    with:
+      ref: ${{ github.sha }}
+      tag: ${{ github.event.release.tag_name }}

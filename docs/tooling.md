@@ -17,9 +17,9 @@ See [the site README](../apps/docs/README.md) for content and hosting configurat
 
 ## npm releases
 
-`Publish npm` (`.github/workflows/publish-npm.yml`) publishes the client when a
-GitHub Release is published. It runs CI before publishing, builds the package,
-checks exports, and publishes with npm provenance using OIDC. No `NPM_TOKEN` or
+`Publish npm` (`.github/workflows/publish-npm.yml`) stages the client when a
+GitHub Release is published. It runs CI, builds the package, checks exports, and
+uses `npm stage publish` with npm provenance and OIDC. No `NPM_TOKEN` or
 `NODE_AUTH_TOKEN` secret is required.
 
 The bootstrap package `@nickwelsh/laravel-zero@0.0.0-placeholder.0` contains only
@@ -30,16 +30,16 @@ to this first version; the first real release will replace that tag.
 Create the GitHub environment `npm`. In the npm package's trusted-publisher
 settings, choose GitHub Actions and use these exact values:
 
-| Field                | Value                      |
-| -------------------- | -------------------------- |
-| Organization or user | `nickwelsh`                |
-| Repository           | `laravel-zero-monorepo`    |
-| Workflow filename    | `publish-npm.yml`          |
-| Environment name     | `npm`                      |
-| Allowed action       | Allow direct `npm publish` |
+| Field                | Value                     |
+| -------------------- | ------------------------- |
+| Organization or user | `nickwelsh`               |
+| Repository           | `laravel-zero-monorepo`   |
+| Workflow filename    | `publish-npm.yml`         |
+| Environment name     | `npm`                     |
+| Allowed action       | Allow `npm stage publish` |
 
-New trusted publishers allow staged publishing by default; direct publishing must
-also be enabled for this workflow. See [npm trusted publishing](https://docs.npmjs.com/trusted-publishers/).
+Allow staged publishing only; disable direct publishing for this trusted
+publisher. See [npm trusted publishing](https://docs.npmjs.com/trusted-publishers/).
 The publishing job declares `contents: read` and `id-token: write`; the repository's
 default workflow permissions can remain read-only. Repository Admin access is
 needed for initial environment and secret setup; package-owner access is used to
@@ -49,7 +49,37 @@ For the first release, keep `packages/client/package.json` at `0.1.0` and publis
 a GitHub Release tagged `v0.1.0` after these workflows are on `main`. Later, change
 the package version and publish a matching `v<version>` release. Stable releases
 publish to `latest`; prerelease versions (for example `0.2.0-beta.1`) must be marked
-as GitHub prereleases and publish to `next`.
+as GitHub prereleases and use `next`.
+
+After CI stages a version, review it in npm and approve it with your package-owner
+account and 2FA. From an authenticated local npm CLI, use
+`npm stage list @nickwelsh/laravel-zero`, `npm stage view <stage-id>` (or
+`npm stage download <stage-id>`), then `npm stage approve <stage-id>`. CI never
+approves staged packages. The PHP mirror tag is published after CI; docs wait
+until the approved stable version is publicly available as npm's `latest`.
+If approval takes longer than one hour, use **Re-run failed jobs** on the release
+workflow after approval. Successful staging and mirror jobs are not rerun.
+Prereleases do not replace production docs. Main-branch CI continues validating
+the docs build without deploying it.
+
+## Dependency maintenance
+
+`.github/dependabot.yml` schedules weekly updates for the complete pnpm workspace,
+both Composer projects, and GitHub Actions. Vite tooling and the docs framework
+dependencies are grouped for compatibility review. Dependabot security updates
+are enabled on the source repository; dependency PRs still require review and CI.
+
+`pnpm-workspace.yaml` contains targeted security overrides where upstream
+dependencies still pin vulnerable releases. Remove each override once its owner
+adopts a fixed version. These overrides protect this workspace; npm consumers
+manage their own Zero peer dependency and its transitive dependencies.
+
+Run `pnpm audit` and `composer audit` in both Composer directories when reviewing
+updates. The npm audit also reports GHSA-vfj7-8cjw-p6xm in `braces` 3.0.3, which
+has no published fix. It affects deeply nested glob patterns in development
+lint tooling. This repository supplies checked-in glob patterns, without taking
+patterns from application users; monitor the upstream fix rather than hiding
+the advisory or replacing the glob engine with an incompatible package.
 
 ## Composer distribution
 

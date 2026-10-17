@@ -38,8 +38,14 @@ root workspace config. The site uses the root pnpm version and lockfile.
 
 ## Cloudflare Workers deployment
 
-The site is deployed as Workers Static Assets by the `Deploy docs` GitHub Actions
-workflow after CI succeeds on `main`. It can also be run manually on `main`.
+The site is deployed as Workers Static Assets by the reusable `Deploy docs`
+GitHub Actions workflow, called by the stable tagged release workflow after CI,
+npm staging and PHP mirror tagging succeed. It waits for you to approve the
+staged npm version and for that version to become public as npm's `latest`, then
+builds the exact release commit. Main-branch CI and prereleases do not deploy.
+If npm approval takes longer than one hour, approve the package and use
+**Re-run failed jobs** on the release workflow. It checks npm's `latest` again
+immediately before deployment so a superseded release cannot replace current docs.
 `cloudflare.config.ts` owns the `laravel-zero-docs` Worker and only the
 `docs.nickwelsh.me/laravel-zero` and `docs.nickwelsh.me/laravel-zero/*` routes.
 The existing proxied DNS record for `docs.nickwelsh.me` must remain in place.
