@@ -83,3 +83,6 @@ jobs:
     with:
       ref: ${{ github.sha }}
       tag: ${{ github.event.release.tag_name }}
+    secrets:
+      CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+      CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}

@@ -46,6 +46,9 @@ builds the exact release commit. Main-branch CI and prereleases do not deploy.
 If npm approval takes longer than one hour, approve the package and use
 **Re-run failed jobs** on the release workflow. It checks npm's `latest` again
 immediately before deployment so a superseded release cannot replace current docs.
+To redeploy an existing stable release after fixing deployment settings, run
+**Deploy docs** manually from `main` and supply its tag, such as `v0.1.0`.
+It deploys that tag's source and applies the same npm `latest` checks.
 `cloudflare.config.ts` owns the `zero-for-laravel-docs` Worker and only the
 `docs.nickwelsh.me/zero-for-laravel` and `docs.nickwelsh.me/zero-for-laravel/*` routes.
 The existing proxied DNS record for `docs.nickwelsh.me` must remain in place.
@@ -56,6 +59,10 @@ Create the GitHub environment `docs` and set:
 | ----------------------- | ------------------ | -------------------------------------- |
 | `CLOUDFLARE_API_TOKEN`  | Environment secret | Cloudflare deployment token            |
 | `CLOUDFLARE_ACCOUNT_ID` | Environment secret | Account containing the Worker and zone |
+
+The release workflow explicitly forwards these secret names to the reusable
+docs workflow. GitHub requires that forwarding even for secrets stored in the
+`docs` environment; the environment values take precedence.
 
 For the first deployment, set the token's Workers **default permissions to Admin**
 at the product scope: creating a Worker requires Admin and cannot be granted to a
