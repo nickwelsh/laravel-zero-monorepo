@@ -15,9 +15,9 @@ use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\SoftDeletes;
-use LaravelZero\Attributes\{ZeroMutate, ZeroQuery};
-use LaravelZero\ContextField;
-use LaravelZero\Definition\{AllowedFilter, ZeroDefinition};
+use ZeroForLaravel\Attributes\{ZeroMutate, ZeroQuery};
+use ZeroForLaravel\ContextField;
+use ZeroForLaravel\Definition\{AllowedFilter, ZeroDefinition};
 
 #[ZeroQuery(['all', 'one'])]
 #[ZeroMutate(['create', 'update', 'destroy', 'restore', 'force_delete'])]
@@ -69,8 +69,8 @@ include without exposing top-level queries or mutations:
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
-use LaravelZero\Definition\ZeroDefinition;
-use LaravelZero\ContextField;
+use ZeroForLaravel\Definition\ZeroDefinition;
+use ZeroForLaravel\ContextField;
 
 class TaskList extends Model
 {
@@ -123,7 +123,7 @@ columns; unknown names fail generation.
 Allowlists must include the primary key, enabled timestamps and soft-delete
 timestamp, authorization and context-fill fields, and keys used by registered
 relationships. Fields used by declared filters and sorts must also be available.
-Laravel Zero fails generation when a required column is missing or excluded;
+Zero for Laravel fails generation when a required column is missing or excluded;
 it never silently adds that column to the replicated data.
 
 For the `Task` example, omitting `user_id` produces

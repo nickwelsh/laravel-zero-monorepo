@@ -1,8 +1,8 @@
 {
     "$schema": "https://getcomposer.org/schema.json",
-    "name": "laravel-zero/example-todos",
+    "name": "zero-for-laravel/example-todos",
     "type": "project",
-    "description": "Authenticated shared todos example for Laravel Zero.",
+    "description": "Authenticated shared todos example for Zero for Laravel.",
     "keywords": [
         "laravel",
         "framework"
@@ -16,7 +16,7 @@
         "laravel/framework": "^13.17",
         "laravel/tinker": "^3.0",
         "laravel/wayfinder": "^0.1.14",
-        "nickwelsh/laravel-zero": "@dev"
+        "nickwelsh/zero-for-laravel": "@dev"
     },
     "require-dev": {
         "fakerphp/faker": "^1.24",

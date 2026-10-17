@@ -1,4 +1,4 @@
-import { useData, useMutation } from '@nickwelsh/laravel-zero/react';
+import { useData, useMutation } from '@nickwelsh/zero-for-laravel/react';
 import { useState } from 'react';
 import InputError from '@/components/input-error';
 import { Button } from '@/components/ui/button';

@@ -1,5 +1,5 @@
 {
-    "title": "Laravel Zero v0.x API reference",
+    "title": "Zero for Laravel v0.x API reference",
     "sourceRoot": "../..",
     "output": "generated/api.json",
     "inputs": [

@@ -1,7 +1,7 @@
 import { Task, TaskList, schema, definitions } from './generated';
 import { nestedRuntime, nestedDefinitions } from './nested';
-import { createLaravelZero } from '@nickwelsh/laravel-zero';
-import type { SelectionData } from '@nickwelsh/laravel-zero';
+import { createZeroForLaravel } from '@nickwelsh/zero-for-laravel';
+import type { SelectionData } from '@nickwelsh/zero-for-laravel';
 import {
     useData,
     useFilter,
@@ -9,7 +9,7 @@ import {
     useFilters,
     type FilterControls,
     type FilterControlProps,
-} from '@nickwelsh/laravel-zero/react';
+} from '@nickwelsh/zero-for-laravel/react';
 import type { ComponentType } from 'react';
 
 // Compiled by typecheck; these are public-contract checks, not runtime tests.
@@ -111,14 +111,14 @@ function useBoundContracts() {
     return { defaults, name };
 }
 
-declare module '@nickwelsh/laravel-zero' {
+declare module '@nickwelsh/zero-for-laravel' {
     interface ModelTypes {
         Task: { preferences: { theme: 'light' | 'dark' } };
     }
 }
 
 function useDtoContracts() {
-    const runtime = createLaravelZero(schema, {
+    const runtime = createZeroForLaravel(schema, {
         ...definitions,
         Task: {
             ...definitions.Task,
@@ -173,7 +173,7 @@ function useNestedContracts() {
 }
 
 function requiredNestedLink() {
-    const runtime = createLaravelZero(schema, {
+    const runtime = createZeroForLaravel(schema, {
         ...nestedDefinitions,
         Task: {
             ...nestedDefinitions.Task,

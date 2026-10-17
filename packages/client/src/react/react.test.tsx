@@ -2,7 +2,7 @@
 import { nestedRuntime } from '../../../../tests/interop/nested';
 import { act, cleanup, fireEvent, render, renderHook, screen } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vite-plus/test';
-import { createLaravelZero } from '../runtime';
+import { createZeroForLaravel } from '../runtime';
 import { Task, schema, mutators, definitions } from '../../../../tests/interop/generated';
 import { useData, useFilter, useFilters, useMutation, createZeroProvider } from './index';
 
@@ -268,7 +268,7 @@ describe('operator controls', () => {
 });
 
 it('reports malformed cast data through the normal failure state and recovers after correction', () => {
-    const runtime = createLaravelZero(schema, {
+    const runtime = createZeroForLaravel(schema, {
         ...definitions,
         Task: {
             ...definitions.Task,

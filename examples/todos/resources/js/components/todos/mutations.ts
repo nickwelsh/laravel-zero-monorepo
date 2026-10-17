@@ -1,4 +1,4 @@
-import type { MutationCall } from '@nickwelsh/laravel-zero/react';
+import type { MutationCall } from '@nickwelsh/zero-for-laravel/react';
 import { toast } from 'sonner';
 
 export async function commitMutation(

@@ -6,8 +6,8 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Model;
-use LaravelZero\ContextField;
-use LaravelZero\Definition\ZeroDefinition;
+use ZeroForLaravel\ContextField;
+use ZeroForLaravel\Definition\ZeroDefinition;
 
 /**
  * @property string $id

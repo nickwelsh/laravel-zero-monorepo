@@ -83,9 +83,9 @@ jobs:
         with:
           name: example-imports
           path: examples/todos/resources/js
-      - run: pnpm --filter @nickwelsh/laravel-zero build
+      - run: pnpm --filter @nickwelsh/zero-for-laravel build
       - run: pnpm check
-      - run: pnpm --filter @laravel-zero/docs deploy:check
+      - run: pnpm --filter @zero-for-laravel/docs deploy:check
       - run: pnpm test:coverage
         if: matrix.php == '8.3' && matrix.laravel == '^13.0'
       - run: pnpm php:test:coverage

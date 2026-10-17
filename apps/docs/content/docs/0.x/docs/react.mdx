@@ -30,7 +30,7 @@ The generic native `ZeroProvider` remains available from the React package for
 applications that manage Zero themselves.
 
 ```tsx
-import { useData, useFilter, useMutation } from '@nickwelsh/laravel-zero/react';
+import { useData, useFilter, useMutation } from '@nickwelsh/zero-for-laravel/react';
 import { Task } from './zero/generated';
 
 function Tasks() {
@@ -115,7 +115,7 @@ For millisecond-preserving writes, use temporal columns with matching precision
 and an Eloquent `$dateFormat` such as `Y-m-d H:i:s.u`.
 
 To customize the client clock or generated-ID provider, call
-`createLaravelZero(schema, definitions, {now: () => new Date(), id: (kind, model) => ...})`
+`createZeroForLaravel(schema, definitions, {now: () => new Date(), id: (kind, model) => ...})`
 and use its returned models/queries/mutators together. Custom IDs must still match
 the declared UUID/ULID strategy. Native Zero options configure storage and transport.
 

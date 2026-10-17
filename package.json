@@ -1,15 +1,15 @@
 {
-    "name": "laravel-zero-monorepo",
+    "name": "zero-for-laravel-monorepo",
     "private": true,
     "type": "module",
     "scripts": {
         "test": "vp test run",
         "typecheck": "tsc --noEmit && pnpm docs:typecheck",
-        "build": "pnpm --filter @nickwelsh/laravel-zero build && pnpm docs:build",
-        "docs:dev": "pnpm --filter @laravel-zero/docs dev",
-        "docs:build": "pnpm --filter @laravel-zero/docs build",
-        "docs:start": "pnpm --filter @laravel-zero/docs start",
-        "docs:typecheck": "pnpm --filter @laravel-zero/docs typecheck",
+        "build": "pnpm --filter @nickwelsh/zero-for-laravel build && pnpm docs:build",
+        "docs:dev": "pnpm --filter @zero-for-laravel/docs dev",
+        "docs:build": "pnpm --filter @zero-for-laravel/docs build",
+        "docs:start": "pnpm --filter @zero-for-laravel/docs start",
+        "docs:typecheck": "pnpm --filter @zero-for-laravel/docs typecheck",
         "contracts:check": "node scripts/check-generated.mjs",
         "package:check": "node scripts/check-package.mjs",
         "format": "vp fmt && pnpm php:format",
@@ -28,7 +28,7 @@
         "php:test:coverage": "composer --working-dir=packages/laravel test:coverage",
         "php:check": "composer --working-dir=packages/laravel check",
         "check": "pnpm workflows:check && pnpm format:check && pnpm lint:check && pnpm typecheck && pnpm php:test && pnpm test && pnpm contracts:check && pnpm build && pnpm package:check",
-        "docs:generate": "pnpm --filter @laravel-zero/docs api:generate",
+        "docs:generate": "pnpm --filter @zero-for-laravel/docs api:generate",
         "workflows:check": "node --test scripts/check-workflows.test.mjs && node scripts/check-workflows.mjs"
     },
     "devDependencies": {

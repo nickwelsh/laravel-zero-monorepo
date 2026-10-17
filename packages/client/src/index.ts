@@ -1,4 +1,4 @@
-export { createLaravelZero } from './runtime';
+export { createZeroForLaravel } from './runtime';
 export type { Model } from './runtime';
 export { Selection } from './query';
 export type { SelectionData, NativeQueries } from './query';

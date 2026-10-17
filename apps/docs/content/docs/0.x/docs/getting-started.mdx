@@ -1,6 +1,6 @@
 ---
 title: Getting started
-description: Install Laravel Zero locally and connect your first model to Zero.
+description: Install Zero for Laravel locally and connect your first model to Zero.
 ---
 
 - PHP 8.3+, Laravel 12 or 13, and the PDO PostgreSQL extension.
@@ -13,12 +13,12 @@ a Composer path repository pointing to its absolute path and require the dev pac
 
 ```json
 {
-    "repositories": [{ "type": "path", "url": "../laravel-zero/packages/laravel", "options": { "symlink": true } }]
+    "repositories": [{ "type": "path", "url": "../zero-for-laravel/packages/laravel", "options": { "symlink": true } }]
 }
 ```
 
 ```sh
-composer require nickwelsh/laravel-zero:@dev
+composer require nickwelsh/zero-for-laravel:@dev
 php artisan vendor:publish --tag=zero-config
 ```
 
@@ -29,12 +29,12 @@ tarball in your app:
 composer --working-dir=packages/laravel install
 pnpm install --frozen-lockfile
 pnpm build
-pnpm --filter @nickwelsh/laravel-zero pack --pack-destination /tmp/laravel-zero-pack
+pnpm --filter @nickwelsh/zero-for-laravel pack --pack-destination /tmp/zero-for-laravel-pack
 ```
 
 ```sh
 # From your Laravel app:
-pnpm add /tmp/laravel-zero-pack/nickwelsh-laravel-zero-0.1.0.tgz @rocicorp/zero@1.10.0
+pnpm add /tmp/zero-for-laravel-pack/nickwelsh-zero-for-laravel-0.1.0.tgz @rocicorp/zero@1.10.0
 ```
 
 Laravel discovers the service provider automatically. The default model discovery
@@ -53,5 +53,5 @@ model in `config/zero.php`, including relationship targets:
 3. [Generate contracts and restrict replication](./replication.mdx).
 4. [Connect React](./react.mdx) and subscribe to a live query.
 
-The [shared todos example](https://github.com/nickwelsh/laravel-zero-monorepo/tree/main/examples/todos)
+The [shared todos example](https://github.com/nickwelsh/zero-for-laravel-monorepo/tree/main/examples/todos)
 contains a complete session-authenticated application with shared lists and live todos.

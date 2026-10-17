@@ -8,10 +8,10 @@ use App\Http\Requests\SaveTodoRequest;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
-use LaravelZero\Attributes\ZeroMutate;
-use LaravelZero\Attributes\ZeroQuery;
-use LaravelZero\Definition\AllowedFilter;
-use LaravelZero\Definition\ZeroDefinition;
+use ZeroForLaravel\Attributes\ZeroMutate;
+use ZeroForLaravel\Attributes\ZeroQuery;
+use ZeroForLaravel\Definition\AllowedFilter;
+use ZeroForLaravel\Definition\ZeroDefinition;
 
 /**
  * @property string $id

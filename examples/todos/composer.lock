@@ -4,7 +4,7 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "de00372a0291bcb31afbb37f118c160e",
+    "content-hash": "42a46c4ffae27299a86c6c97890d2e41",
     "packages": [
         {
             "name": "bacon/bacon-qr-code",
@@ -2882,12 +2882,12 @@
             "time": "2026-07-17T23:02:45+00:00"
         },
         {
-            "name": "nickwelsh/laravel-zero",
-            "version": "dev-main",
+            "name": "nickwelsh/zero-for-laravel",
+            "version": "dev-codex/zero-for-laravel",
             "dist": {
                 "type": "path",
                 "url": "../../packages/laravel",
-                "reference": "5947a9d5cabbb5e6b6df781914ff8d98c32116d1"
+                "reference": "45afd23dfde87fb3dce5467c566d1ddf9e198489"
             },
             "require": {
                 "laravel/framework": "^12.0|^13.0",
@@ -2907,18 +2907,18 @@
             "extra": {
                 "laravel": {
                     "providers": [
-                        "LaravelZero\\ZeroServiceProvider"
+                        "ZeroForLaravel\\ZeroServiceProvider"
                     ]
                 }
             },
             "autoload": {
                 "psr-4": {
-                    "LaravelZero\\": "src/"
+                    "ZeroForLaravel\\": "src/"
                 }
             },
             "autoload-dev": {
                 "psr-4": {
-                    "LaravelZero\\Tests\\": "tests/"
+                    "ZeroForLaravel\\Tests\\": "tests/"
                 }
             },
             "scripts": {
@@ -11491,7 +11491,7 @@
     "aliases": [],
     "minimum-stability": "stable",
     "stability-flags": {
-        "nickwelsh/laravel-zero": 20
+        "nickwelsh/zero-for-laravel": 20
     },
     "prefer-stable": true,
     "prefer-lowest": false,

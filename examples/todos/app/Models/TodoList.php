@@ -8,10 +8,10 @@ use App\Http\Requests\SaveTodoListRequest;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
-use LaravelZero\Attributes\ZeroMutate;
-use LaravelZero\Attributes\ZeroQuery;
-use LaravelZero\ContextField;
-use LaravelZero\Definition\ZeroDefinition;
+use ZeroForLaravel\Attributes\ZeroMutate;
+use ZeroForLaravel\Attributes\ZeroQuery;
+use ZeroForLaravel\ContextField;
+use ZeroForLaravel\Definition\ZeroDefinition;
 
 /**
  * @property string $id

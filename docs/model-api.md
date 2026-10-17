@@ -75,7 +75,7 @@ or one array. Disallowed arguments remain errors on both client and server.
 )
 ```
 
-Import `LaravelZero\Enums\FilterOperator` and the builders from `LaravelZero\Query`.
+Import `ZeroForLaravel\Enums\FilterOperator` and the builders from `ZeroForLaravel\Query`.
 Scalar groups use one value across their members; use compatible column types.
 `groupAnd` is also available. Unlike URL query strings, dynamic operators retain
 the actual input type, including `Date`:
@@ -131,7 +131,7 @@ through TypeScript's native module augmentation:
 ```ts
 import type { PreferencesData } from './types';
 
-declare module '@nickwelsh/laravel-zero' {
+declare module '@nickwelsh/zero-for-laravel' {
     interface ModelTypes {
         Task: { preferences: PreferencesData };
     }
@@ -192,7 +192,7 @@ restrictions if they introduce additional values after authorization.
 Declare which child operations are allowed under each parent operation:
 
 ```php
-use LaravelZero\Definition\NestedMutation;
+use ZeroForLaravel\Definition\NestedMutation;
 
 return ZeroDefinition::make()
     // Existing visibility, context fills, and FormRequest declarations go here.
@@ -248,7 +248,7 @@ and `route('model')` on the HTTP endpoint. It receives no nested relation payloa
 Access trusted nesting context through:
 
 ```php
-use LaravelZero\Mutation\MutationContext;
+use ZeroForLaravel\Mutation\MutationContext;
 
 $mutation = MutationContext::from($this);
 $mutation->operation; // 'create' or 'update'

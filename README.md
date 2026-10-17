@@ -1,4 +1,4 @@
-# Laravel Zero
+# Zero for Laravel
 
 Laravel-owned model contracts, automatic queries, and optimistic CRUD for
 [Rocicorp Zero](https://zero.rocicorp.dev). Declare the allowed interface in PHP,
@@ -6,8 +6,8 @@ generate a native Zero schema and typed TypeScript models, and subscribe from Re
 Laravel authenticates reads and authorizes writes; Zero owns replication, local
 subscriptions, optimistic replay, and reconciliation.
 
-This monorepo contains `nickwelsh/laravel-zero` in `packages/laravel` and
-`@nickwelsh/laravel-zero` in `packages/client`. The client has a framework-independent
+This monorepo contains `nickwelsh/zero-for-laravel` in `packages/laravel` and
+`@nickwelsh/zero-for-laravel` in `packages/client`. The client has a framework-independent
 core and a separate `/react` export. Both target **Zero 1.10.0**.
 
 ## Requirements and local installation
@@ -22,12 +22,12 @@ a Composer path repository pointing to its absolute path and require the dev pac
 
 ```json
 {
-    "repositories": [{ "type": "path", "url": "../laravel-zero/packages/laravel", "options": { "symlink": true } }]
+    "repositories": [{ "type": "path", "url": "../zero-for-laravel/packages/laravel", "options": { "symlink": true } }]
 }
 ```
 
 ```sh
-composer require nickwelsh/laravel-zero:@dev
+composer require nickwelsh/zero-for-laravel:@dev
 php artisan vendor:publish --tag=zero-config
 ```
 
@@ -38,12 +38,12 @@ tarball in your app:
 composer --working-dir=packages/laravel install
 pnpm install --frozen-lockfile
 pnpm build
-pnpm --filter @nickwelsh/laravel-zero pack --pack-destination /tmp/laravel-zero-pack
+pnpm --filter @nickwelsh/zero-for-laravel pack --pack-destination /tmp/zero-for-laravel-pack
 ```
 
 ```sh
 # From your Laravel app:
-pnpm add /tmp/laravel-zero-pack/nickwelsh-laravel-zero-0.1.0.tgz @rocicorp/zero@1.10.0
+pnpm add /tmp/zero-for-laravel-pack/nickwelsh-zero-for-laravel-0.1.0.tgz @rocicorp/zero@1.10.0
 ```
 
 Laravel discovers the service provider automatically. The default model discovery
@@ -68,9 +68,9 @@ use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\SoftDeletes;
-use LaravelZero\Attributes\{ZeroMutate, ZeroQuery};
-use LaravelZero\ContextField;
-use LaravelZero\Definition\{AllowedFilter, ZeroDefinition};
+use ZeroForLaravel\Attributes\{ZeroMutate, ZeroQuery};
+use ZeroForLaravel\ContextField;
+use ZeroForLaravel\Definition\{AllowedFilter, ZeroDefinition};
 
 #[ZeroQuery(['all', 'one'])]
 #[ZeroMutate(['create', 'update', 'destroy', 'restore', 'force_delete'])]
@@ -117,8 +117,8 @@ include without exposing top-level queries or mutations:
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
-use LaravelZero\Definition\ZeroDefinition;
-use LaravelZero\ContextField;
+use ZeroForLaravel\Definition\ZeroDefinition;
+use ZeroForLaravel\ContextField;
 
 class TaskList extends Model
 {
@@ -335,7 +335,7 @@ The generic native `ZeroProvider` remains available from the React package for
 applications that manage Zero themselves.
 
 ```tsx
-import { useData, useFilter, useMutation } from '@nickwelsh/laravel-zero/react';
+import { useData, useFilter, useMutation } from '@nickwelsh/zero-for-laravel/react';
 import { Task } from './zero/generated';
 
 function Tasks() {
@@ -420,7 +420,7 @@ For millisecond-preserving writes, use temporal columns with matching precision
 and an Eloquent `$dateFormat` such as `Y-m-d H:i:s.u`.
 
 To customize the client clock or generated-ID provider, call
-`createLaravelZero(schema, definitions, {now: () => new Date(), id: (kind, model) => ...})`
+`createZeroForLaravel(schema, definitions, {now: () => new Date(), id: (kind, model) => ...})`
 and use its returned models/queries/mutators together. Custom IDs must still match
 the declared UUID/ULID strategy. Native Zero options configure storage and transport.
 
@@ -464,7 +464,7 @@ cast/DTO typing, form usage, and field-level write authorization.
 The [v0.x documentation site](apps/docs/README.md) uses
 [`@nickwelsh/docs-base`](https://github.com/nickwelsh/docs-base), with guides and
 Refquill-generated PHP and TypeScript API references. Run `pnpm docs:dev` from
-the repository root and open `http://localhost:3000/laravel-zero/`. Use
+the repository root and open `http://localhost:3000/zero-for-laravel/`. Use
 `pnpm docs:build` and `pnpm docs:start` for a production preview, or
 `pnpm docs:generate` to regenerate the API reference independently.
 

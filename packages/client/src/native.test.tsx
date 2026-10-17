@@ -3,7 +3,7 @@ import { nestedRuntime } from '../../../tests/interop/nested';
 import { Zero } from '@rocicorp/zero';
 import type { ClientContext } from './index';
 import { describe, expect, it } from 'vite-plus/test';
-import { createLaravelZero } from './runtime';
+import { createZeroForLaravel } from './runtime';
 import { Task, schema, mutators, definitions } from '../../../tests/interop/generated';
 
 describe('native Zero optimistic CRUD', () => {
@@ -58,7 +58,7 @@ describe('native Zero optimistic CRUD', () => {
 
 describe('relation authorization', () => {
     it('hides rows without a related record visible to the current user', async () => {
-        const shared = createLaravelZero(schema, {
+        const shared = createZeroForLaravel(schema, {
             ...definitions,
             Task: { ...definitions.Task, authorization: [], authorizationRelations: ['list'] },
             TaskList: {

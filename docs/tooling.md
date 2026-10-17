@@ -1,15 +1,15 @@
 # Workspace tooling
 
 The repository root owns workspace tooling and cross-language contract tests.
-`packages/laravel` owns the `nickwelsh/laravel-zero` Composer package, its source,
+`packages/laravel` owns the `nickwelsh/zero-for-laravel` Composer package, its source,
 configuration, tests and PHP tools. `packages/client` owns the
-`@nickwelsh/laravel-zero` npm package and its core and React exports.
+`@nickwelsh/zero-for-laravel` npm package and its core and React exports.
 
 `apps/docs` uses [`@nickwelsh/docs-base`](https://github.com/nickwelsh/docs-base)
 for the shared Waku/Fumadocs application. It owns site configuration, v0.x guides,
 and Refquill-generated PHP and TypeScript references. Run `pnpm docs:dev` at
-`http://localhost:3000/laravel-zero/`, or `pnpm docs:build` followed by
-`pnpm docs:start` for a production preview at `http://localhost:8080/laravel-zero/`.
+`http://localhost:3000/zero-for-laravel/`, or `pnpm docs:build` followed by
+`pnpm docs:start` for a production preview at `http://localhost:8080/zero-for-laravel/`.
 Both dev and build regenerate the API reference. `pnpm docs:generate` regenerates
 it independently; commit `apps/docs/generated/api.json` after source changes.
 The Waku patch supplied by docs-base is registered in the root workspace config.
@@ -22,7 +22,7 @@ GitHub Release is published. It runs CI, builds the package, checks exports, and
 uses `npm stage publish` with npm provenance and OIDC. No `NPM_TOKEN` or
 `NODE_AUTH_TOKEN` secret is required.
 
-The bootstrap package `@nickwelsh/laravel-zero@0.0.0-placeholder.0` contains only
+The bootstrap package `@nickwelsh/zero-for-laravel@0.0.0-placeholder.0` contains only
 `package.json` and uses the `bootstrap` dist-tag. It exists to configure trusted
 publishing; it is not an installable client release. npm also assigned `latest`
 to this first version; the first real release will replace that tag.
@@ -30,13 +30,13 @@ to this first version; the first real release will replace that tag.
 Create the GitHub environment `npm`. In the npm package's trusted-publisher
 settings, choose GitHub Actions and use these exact values:
 
-| Field                | Value                     |
-| -------------------- | ------------------------- |
-| Organization or user | `nickwelsh`               |
-| Repository           | `laravel-zero-monorepo`   |
-| Workflow filename    | `publish-npm.yml`         |
-| Environment name     | `npm`                     |
-| Allowed action       | Allow `npm stage publish` |
+| Field                | Value                       |
+| -------------------- | --------------------------- |
+| Organization or user | `nickwelsh`                 |
+| Repository           | `zero-for-laravel-monorepo` |
+| Workflow filename    | `publish-npm.yml`           |
+| Environment name     | `npm`                       |
+| Allowed action       | Allow `npm stage publish`   |
 
 Allow staged publishing only; disable direct publishing for this trusted
 publisher. See [npm trusted publishing](https://docs.npmjs.com/trusted-publishers/).
@@ -53,7 +53,7 @@ as GitHub prereleases and use `next`.
 
 After CI stages a version, review it in npm and approve it with your package-owner
 account and 2FA. From an authenticated local npm CLI, use
-`npm stage list @nickwelsh/laravel-zero`, `npm stage view <stage-id>` (or
+`npm stage list @nickwelsh/zero-for-laravel`, `npm stage view <stage-id>` (or
 `npm stage download <stage-id>`), then `npm stage approve <stage-id>`. CI never
 approves staged packages. The PHP mirror tag is published after CI; docs wait
 until the approved stable version is publicly available as npm's `latest`.
@@ -84,12 +84,12 @@ come from untrusted sources.
 
 ## Composer distribution
 
-The PHP package is named `nickwelsh/laravel-zero`. Its current `composer.json` is
+The PHP package is named `nickwelsh/zero-for-laravel`. Its current `composer.json` is
 under `packages/laravel`; Packagist.org requires it at the repository root.
 See [Packagist's package requirements](https://packagist.org/about).
 
-The source of truth is `nickwelsh/laravel-zero-monorepo`. The public
-`nickwelsh/laravel-zero` repository is an automated subtree split of
+The source of truth is `nickwelsh/zero-for-laravel-monorepo`. The public
+`nickwelsh/zero-for-laravel` repository is an automated subtree split of
 `packages/laravel`; never edit the mirror directly. Its README sends contributors
 and issues back to the monorepo.
 
@@ -103,8 +103,8 @@ only to the PHP mirror. The normal `GITHUB_TOKEN` cannot push to another reposit
 Development files and the lockfile remain in mirror history but are excluded from
 Composer distribution archives by `packages/laravel/.gitattributes`.
 
-Submit `https://github.com/nickwelsh/laravel-zero` to Packagist.org as
-`nickwelsh/laravel-zero`, then enable Packagist's GitHub hook for that mirror.
+Submit `https://github.com/nickwelsh/zero-for-laravel` to Packagist.org as
+`nickwelsh/zero-for-laravel`, then enable Packagist's GitHub hook for that mirror.
 Packagist discovers versions from its tags; do not add a Composer `version` field.
 The PHP package and npm package share release tags from the monorepo. Neither
 publishing workflow changes package versions automatically.
@@ -212,6 +212,6 @@ for Vitest's Vite peer requirements. Vite+ and its core alias are pinned togethe
 ## Publishing
 
 Publish releases from the source monorepo. npm publishes `packages/client` as
-`@nickwelsh/laravel-zero`; Packagist indexes the generated PHP mirror as
-`nickwelsh/laravel-zero`. See the release setup above and
+`@nickwelsh/zero-for-laravel`; Packagist indexes the generated PHP mirror as
+`nickwelsh/zero-for-laravel`. See the release setup above and
 [the docs deployment guide](../apps/docs/README.md#cloudflare-workers-deployment).

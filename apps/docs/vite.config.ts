@@ -7,7 +7,7 @@ export default defineConfig(async () => {
     // Prefix the asset paths directly; assets.basePath is account-gated.
     const publicDir = '.cloudflare/public';
     await rm(publicDir, { recursive: true, force: true });
-    await cp('dist/public', `${publicDir}/laravel-zero`, { recursive: true });
+    await cp('dist/public', `${publicDir}/zero-for-laravel`, { recursive: true });
     return {
         publicDir,
         build: { outDir: '.cloudflare/build' },

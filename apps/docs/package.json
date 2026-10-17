@@ -1,5 +1,5 @@
 {
-    "name": "@laravel-zero/docs",
+    "name": "@zero-for-laravel/docs",
     "private": true,
     "type": "module",
     "scripts": {

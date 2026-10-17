@@ -7,10 +7,10 @@ use App\Models\User;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Validation\ValidationException;
-use LaravelZero\Metadata\ModelRegistry;
-use LaravelZero\Mutation\CrudExecutor;
-use LaravelZero\Query\QueryCompiler;
-use LaravelZero\ZeroContext;
+use ZeroForLaravel\Metadata\ModelRegistry;
+use ZeroForLaravel\Mutation\CrudExecutor;
+use ZeroForLaravel\Query\QueryCompiler;
+use ZeroForLaravel\ZeroContext;
 
 function todosExecutor(): CrudExecutor
 {

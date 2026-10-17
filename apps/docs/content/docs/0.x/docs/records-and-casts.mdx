@@ -33,7 +33,7 @@ through TypeScript's native module augmentation:
 ```ts
 import type { PreferencesData } from './types';
 
-declare module '@nickwelsh/laravel-zero' {
+declare module '@nickwelsh/zero-for-laravel' {
     interface ModelTypes {
         Task: { preferences: PreferencesData };
     }

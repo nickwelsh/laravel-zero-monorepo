@@ -18,5 +18,5 @@ registerHooks({
     },
 });
 const core = await import(new URL('dist/index.js', root).href);
-if (typeof core.createLaravelZero !== 'function') throw new Error('Missing core runtime export.');
+if (typeof core.createZeroForLaravel !== 'function') throw new Error('Missing core runtime export.');
 console.log('Built exports exist, and the core package loads without React.');

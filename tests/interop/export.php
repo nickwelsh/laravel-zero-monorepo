@@ -5,14 +5,14 @@ require __DIR__.'/../../packages/laravel/vendor/autoload.php';
 use Illuminate\Container\Container;
 use Illuminate\Database\Capsule\Manager;
 use Illuminate\Database\Schema\Blueprint;
-use LaravelZero\Generation\TypeScriptGenerator;
-use LaravelZero\Metadata\ModelRegistry;
-use LaravelZero\Query\QueryCompiler;
-use LaravelZero\Tests\Fixtures\Comment;
-use LaravelZero\Tests\Fixtures\Tag;
-use LaravelZero\Tests\Fixtures\Task;
-use LaravelZero\Tests\Fixtures\TaskList;
-use LaravelZero\ZeroContext;
+use ZeroForLaravel\Generation\TypeScriptGenerator;
+use ZeroForLaravel\Metadata\ModelRegistry;
+use ZeroForLaravel\Query\QueryCompiler;
+use ZeroForLaravel\Tests\Fixtures\Comment;
+use ZeroForLaravel\Tests\Fixtures\Tag;
+use ZeroForLaravel\Tests\Fixtures\Task;
+use ZeroForLaravel\Tests\Fixtures\TaskList;
+use ZeroForLaravel\ZeroContext;
 
 $capsule = new Manager;
 $capsule->addConnection(['driver' => 'sqlite', 'database' => ':memory:', 'prefix' => '']);
@@ -53,7 +53,7 @@ $capsule->schema()->create('comments', function (Blueprint $table) {
 Container::setInstance($capsule->getContainer());
 $registry = new ModelRegistry([Task::class, TaskList::class, Tag::class, Comment::class]);
 if (($argv[3] ?? null) === 'scope') {
-    $registry->get('Task')->definition->enforceServerScope(fn (\LaravelZero\Query\ZQLBuilder $query) => $query->where(fn (\LaravelZero\Query\ZeroOperator $op) => $op->or($op->cmp('done', true), $op->cmp('title', 'shared'))));
+    $registry->get('Task')->definition->enforceServerScope(fn (\ZeroForLaravel\Query\ZQLBuilder $query) => $query->where(fn (\ZeroForLaravel\Query\ZeroOperator $op) => $op->or($op->cmp('done', true), $op->cmp('title', 'shared'))));
 }
 if (($argv[1] ?? null) === 'generate') {
     echo (new TypeScriptGenerator)->generate($registry);

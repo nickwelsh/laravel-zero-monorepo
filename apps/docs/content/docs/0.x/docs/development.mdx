@@ -51,9 +51,9 @@ pnpm docs:start
 ```
 
 The development site opens at
-[localhost:3000/laravel-zero/](http://localhost:3000/laravel-zero/).
+[localhost:3000/zero-for-laravel/](http://localhost:3000/zero-for-laravel/).
 The production preview uses port 8080. `apps/docs/waku.config.ts` configures the
-public origin `https://docs.nickwelsh.me` and base path `/laravel-zero`. Change
+public origin `https://docs.nickwelsh.me` and base path `/zero-for-laravel`. Change
 those values and rebuild if hosting elsewhere. These commands build and preview;
 they do not deploy the site.
 
@@ -61,7 +61,7 @@ they do not deploy the site.
 
 ```sh
 pnpm docs:generate
-pnpm --filter @laravel-zero/docs api:validate
+pnpm --filter @zero-for-laravel/docs api:validate
 ```
 
 `apps/docs/refquill.json` selects the PHP package source and the TypeScript
@@ -69,7 +69,7 @@ core and React entry points. Refquill writes `apps/docs/generated/api.json`,
 which is committed so changes to API docs are reviewable. Development and
 production builds regenerate it before starting the shared app.
 
-The reference appears at `/laravel-zero/docs/0.x/api` and includes source links
+The reference appears at `/zero-for-laravel/docs/0.x/api` and includes source links
 relative to the repository root. Do not edit or format the generated JSON by hand.
 Update source declarations/comments and regenerate instead. Refquill preserves
 the previous output if analysis fails.

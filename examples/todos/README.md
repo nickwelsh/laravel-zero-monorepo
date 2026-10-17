@@ -2,7 +2,7 @@
 
 A Laravel 13 React starter application with session authentication and native Zero
 live queries/optimistic CRUD. It consumes the local Composer package in
-`../../packages/laravel` and the `@nickwelsh/laravel-zero` pnpm workspace package.
+`../../packages/laravel` and the `@nickwelsh/zero-for-laravel` pnpm workspace package.
 
 - Application: <https://todos.test>
 - Zero cache: <https://zero.todos.test> (local port 4858)

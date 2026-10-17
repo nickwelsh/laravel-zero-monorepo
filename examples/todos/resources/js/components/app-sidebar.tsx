@@ -27,7 +27,7 @@ const mainNavItems: NavItem[] = [
 const footerNavItems: NavItem[] = [
     {
         title: 'Repository',
-        href: 'https://github.com/nickwelsh/laravel-zero-monorepo',
+        href: 'https://github.com/nickwelsh/zero-for-laravel-monorepo',
         icon: FolderGit2,
     },
     {

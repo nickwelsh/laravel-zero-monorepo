@@ -6,7 +6,7 @@ description: Create and update related records atomically with explicit per-edge
 Declare which child operations are allowed under each parent operation:
 
 ```php
-use LaravelZero\Definition\NestedMutation;
+use ZeroForLaravel\Definition\NestedMutation;
 
 return ZeroDefinition::make()
     // Existing visibility, context fills, and FormRequest declarations go here.
@@ -62,7 +62,7 @@ and `route('model')` on the HTTP endpoint. It receives no nested relation payloa
 Access trusted nesting context through:
 
 ```php
-use LaravelZero\Mutation\MutationContext;
+use ZeroForLaravel\Mutation\MutationContext;
 
 $mutation = MutationContext::from($this);
 $mutation->operation; // 'create' or 'update'

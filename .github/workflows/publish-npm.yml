@@ -71,7 +71,7 @@ jobs:
           registry-url: https://registry.npmjs.org
       - run: npm install --global npm@11.20.0
       - run: pnpm install --frozen-lockfile
-      - run: pnpm --filter @nickwelsh/laravel-zero build
+      - run: pnpm --filter @nickwelsh/zero-for-laravel build
       - run: pnpm package:check
       - run: npm stage publish --access public --provenance --tag "$NPM_DIST_TAG"
         working-directory: packages/client

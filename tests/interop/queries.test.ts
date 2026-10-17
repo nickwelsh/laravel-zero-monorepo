@@ -3,7 +3,7 @@ import { execFileSync } from 'node:child_process';
 import { createBuilder } from '@rocicorp/zero';
 import { handleQueryRequest } from '@rocicorp/zero/server';
 import { schema, queries } from './generated';
-import type { QueryArgs } from '@nickwelsh/laravel-zero';
+import type { QueryArgs } from '@nickwelsh/zero-for-laravel';
 
 describe('PHP / native Zero query equivalence', () => {
     for (const [name, args] of [

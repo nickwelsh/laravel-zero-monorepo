@@ -1,10 +1,10 @@
 import { describe, expect, it } from 'vite-plus/test';
 import { Task, definitions, schema } from '../../../tests/interop/generated';
-import { createLaravelZero } from './index';
+import { createZeroForLaravel } from './index';
 
 describe('generated models', () => {
     it('accepts numeric record IDs for reads and updates on existing integer-key tables', () => {
-        const runtime = createLaravelZero(schema, {
+        const runtime = createZeroForLaravel(schema, {
             ...definitions,
             Task: {
                 ...definitions.Task,
@@ -26,7 +26,7 @@ describe('generated models', () => {
         ).toThrow(/value/i);
     });
     it('rejects null substring filters even when the column is nullable', () => {
-        const runtime = createLaravelZero(schema, {
+        const runtime = createZeroForLaravel(schema, {
             ...definitions,
             Task: {
                 ...definitions.Task,
@@ -58,7 +58,7 @@ describe('generated models', () => {
         expect(rows[0]?.data.list?.data.tasks[0]?.data.created_at).toEqual(new Date(1700000000000));
     });
     it('validates portable FormRequest rules before enqueueing', () => {
-        const runtime = createLaravelZero(schema, {
+        const runtime = createZeroForLaravel(schema, {
             ...definitions,
             Task: {
                 ...definitions.Task,
@@ -124,7 +124,7 @@ describe('generated models', () => {
 
     it('prepares IDs and timestamps once before enqueueing and hides protected fields', () => {
         let ticks = 0;
-        const runtime = createLaravelZero(schema, definitions, {
+        const runtime = createZeroForLaravel(schema, definitions, {
             now: () => new Date(++ticks),
             id: () => '019a0000-0000-7000-8000-000000000001',
         });
@@ -144,7 +144,7 @@ describe('generated models', () => {
     });
 
     it('hydrates collision-safe snapshots and binds destructured mutations to their ID', () => {
-        const runtime = createLaravelZero(schema, definitions, { now: () => new Date(123) });
+        const runtime = createZeroForLaravel(schema, definitions, { now: () => new Date(123) });
         const row = runtime.models.Task.query()
             .all()
             .with('list')
@@ -172,7 +172,7 @@ describe('generated models', () => {
     });
 
     it('keeps column names separate from record methods and clones JSON values', () => {
-        const runtime = createLaravelZero(schema, {
+        const runtime = createZeroForLaravel(schema, {
             ...definitions,
             Task: {
                 ...definitions.Task,
@@ -213,7 +213,7 @@ describe('generated models', () => {
 describe('cast hydration', () => {
     it('hydrates supported primitive and JSON casts and serializes public mutation values', () => {
         const text = definitions.Task.columns.title;
-        const runtime = createLaravelZero(schema, {
+        const runtime = createZeroForLaravel(schema, {
             ...definitions,
             Task: {
                 ...definitions.Task,

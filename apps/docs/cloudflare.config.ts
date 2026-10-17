@@ -2,7 +2,7 @@ import { defineConfig, triggers } from 'cf/config';
 
 export default defineConfig({
     worker: {
-        name: 'laravel-zero-docs',
+        name: 'zero-for-laravel-docs',
         compatibilityDate: '2026-10-17',
         workersDev: false,
         previewUrls: false,
@@ -11,8 +11,8 @@ export default defineConfig({
             notFoundHandling: '404-page',
         },
         triggers: [
-            triggers.fetch({ pattern: 'docs.nickwelsh.me/laravel-zero', zone: 'nickwelsh.me' }),
-            triggers.fetch({ pattern: 'docs.nickwelsh.me/laravel-zero/*', zone: 'nickwelsh.me' }),
+            triggers.fetch({ pattern: 'docs.nickwelsh.me/zero-for-laravel', zone: 'nickwelsh.me' }),
+            triggers.fetch({ pattern: 'docs.nickwelsh.me/zero-for-laravel/*', zone: 'nickwelsh.me' }),
         ],
         observability: {
             enabled: true,

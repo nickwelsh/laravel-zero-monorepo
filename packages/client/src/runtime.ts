@@ -15,7 +15,7 @@ export type Model<S extends Schema, D extends ContractMap, N extends keyof D & s
     readonly query: ModelQueries<S, D, N> & (() => ModelQueries<S, D, N>);
 } & { [O in D[N]['mutations'][number]]: () => Mutation<S, D, N, O> };
 
-export function createLaravelZero<S extends Schema, const D extends ContractMap>(
+export function createZeroForLaravel<S extends Schema, const D extends ContractMap>(
     schema: S,
     definitions: D,
     defaults: ClientDefaults = {},

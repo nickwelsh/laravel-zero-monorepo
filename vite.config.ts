@@ -144,10 +144,10 @@ export default defineConfig({
     },
     resolve: {
         alias: {
-            '@nickwelsh/laravel-zero/react': fileURLToPath(
+            '@nickwelsh/zero-for-laravel/react': fileURLToPath(
                 new URL('./packages/client/src/react/index.ts', import.meta.url),
             ),
-            '@nickwelsh/laravel-zero': fileURLToPath(new URL('./packages/client/src/index.ts', import.meta.url)),
+            '@nickwelsh/zero-for-laravel': fileURLToPath(new URL('./packages/client/src/index.ts', import.meta.url)),
         },
     },
     test: {

@@ -5,7 +5,7 @@ declare(strict_types=1);
 use App\Models\ListMembership;
 use App\Models\Todo;
 use App\Models\TodoList;
-use LaravelZero\Http\ContextResolver;
+use ZeroForLaravel\Http\ContextResolver;
 
 return [
     // Empty discovers models with Zero attributes or a zero() definition under app/Models.
