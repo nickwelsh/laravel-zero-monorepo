@@ -15,6 +15,66 @@ it independently; commit `apps/docs/generated/api.json` after source changes.
 The Waku patch supplied by docs-base is registered in the root workspace config.
 See [the site README](../apps/docs/README.md) for content and hosting configuration.
 
+## npm releases
+
+`Publish npm` (`.github/workflows/publish-npm.yml`) publishes the client when a
+GitHub Release is published. It runs CI before publishing, builds the package,
+checks exports, and publishes with npm provenance using OIDC. No `NPM_TOKEN` or
+`NODE_AUTH_TOKEN` secret is required.
+
+The bootstrap submission contains only `package.json` and requests version
+`0.0.0-placeholder.0` under the `bootstrap` dist-tag. npm currently exposes its
+temporary `0.0.0-stage` placeholder for the new package. It exists to configure
+trusted publishing; it is not an installable client release.
+
+Create the GitHub environment `npm`. In the npm package's trusted-publisher
+settings, choose GitHub Actions and use these exact values:
+
+| Field                | Value                      |
+| -------------------- | -------------------------- |
+| Organization or user | `nickwelsh`                |
+| Repository           | `laravel-zero`             |
+| Workflow filename    | `publish-npm.yml`          |
+| Environment name     | `npm`                      |
+| Allowed action       | Allow direct `npm publish` |
+
+New trusted publishers allow staged publishing by default; direct publishing must
+also be enabled for this workflow. See [npm trusted publishing](https://docs.npmjs.com/trusted-publishers/).
+The publishing job declares `contents: read` and `id-token: write`; the repository's
+default workflow permissions can remain read-only. Repository Admin access is
+needed for initial environment and secret setup; package-owner access is used to
+configure npm. Do not grant an admin token to the publish job.
+
+For the first release, keep `packages/client/package.json` at `0.1.0` and publish
+a GitHub Release tagged `v0.1.0` after these workflows are on `main`. Later, change
+the package version and publish a matching `v<version>` release. Stable releases
+publish to `latest`; prerelease versions (for example `0.2.0-beta.1`) must be marked
+as GitHub prereleases and publish to `next`.
+
+## Composer distribution
+
+The PHP package is named `nickwelsh/laravel-zero`. Its current `composer.json` is
+under `packages/laravel`; Packagist.org requires it at the repository root.
+See [Packagist's package requirements](https://packagist.org/about).
+
+Two approaches are available before submitting the package:
+
+- Keep this layout and automatically split `packages/laravel` into a public
+  distribution repository. Submit that repository to Packagist, connect the
+  Packagist GitHub integration, and mirror release tags. The split workflow needs
+  write access to that repository, usually a repository-scoped deploy key or
+  GitHub App token; this repository's `GITHUB_TOKEN` cannot push to another repo.
+- Make the monorepo root the Composer package, updating autoload, scripts, and
+  archive exclusions for the existing subdirectory layout. This avoids a second
+  repository but changes the Composer development and distribution setup.
+
+No PHP distribution repository, synchronization workflow, or Packagist submission
+has been created yet. Choose the layout first, validate the distributable with
+`composer validate --strict` and a consumer install, then tag the first release.
+Do not add a Composer `version` field: Packagist derives versions from Git tags.
+
+## Development checks
+
 Use PHP 8.3+, Composer, Node 22.18+ (22.x) or 24.11+, and the pinned pnpm version. The
 Composer platform is pinned to PHP 8.3 so development dependencies remain usable
 on the minimum supported runtime. Laravel 12 and 13 are tested in CI.
