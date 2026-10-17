@@ -144,8 +144,8 @@ importers:
         specifier: ^3.0.0
         version: 3.8.0(@voidzero-dev/vite-plus-core@1.2.0(@types/node@26.6.5)(@volar/typescript@2.4.28(typescript@6.0.3))(@vue/language-core@3.3.13)(esbuild@0.28.2)(jiti@2.7.0)(terser@5.51.2)(tsx@4.23.15)(typescript@6.0.3)(yaml@2.9.1))
       '@laravel/passkeys':
-        specifier: ^0.2.0
-        version: 0.2.0(react@19.3.1)(svelte@5.57.2)
+        specifier: ^0.4.0
+        version: 0.4.0(react@19.3.1)(svelte@5.57.2)
       '@nickwelsh/laravel-zero':
         specifier: workspace:*
         version: link:../../packages/client
@@ -1164,13 +1164,13 @@ packages:
     os: [darwin, linux]
     hasBin: true
 
-  '@laravel/passkeys@0.2.0':
-    resolution: {integrity: sha512-K+owv26weKrYaoTJutqU40UsJZpwYkqB9jdlz5Bv/C54nxj2+Py9jbVwxASWg21fLsPhn3ngPKZE5RnfakCQKg==}
+  '@laravel/passkeys@0.4.0':
+    resolution: {integrity: sha512-59UHJHZPrIT8f5hFQJUR1EXhazWZTg3DcJefxSfA3aRj6xu40I/lYDveUY4oL2/h/crq9jjptSKykZDDold7aA==}
     engines: {node: '>=20.19.0'}
     peerDependencies:
       react: ^18.0.0 || ^19.0.0
       svelte: ^5.0.0
-      vue: ^3.0.0
+      vue: ^3.3.0
     peerDependenciesMeta:
       react:
         optional: true
@@ -8506,7 +8506,7 @@ snapshots:
       - utf-8-validate
     optional: true
 
-  '@laravel/passkeys@0.2.0(react@19.3.1)(svelte@5.57.2)':
+  '@laravel/passkeys@0.4.0(react@19.3.1)(svelte@5.57.2)':
     dependencies:
       '@simplewebauthn/browser': 13.3.0
     optionalDependencies:
