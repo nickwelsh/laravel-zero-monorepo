@@ -57,6 +57,11 @@ jobs:
       - run: composer --working-dir=packages/laravel validate --strict
       - run: composer --working-dir=packages/laravel update --with 'laravel/framework:${{ matrix.laravel }}' --with 'orchestra/testbench:${{ matrix.testbench }}' --no-interaction --prefer-dist
       - run: pnpm install --frozen-lockfile
+      - name: Prepare example imports for workspace linting
+        run: |
+          pnpm --filter @laravel-zero/client build
+          composer --working-dir=examples/todos install --no-dev --no-interaction --prefer-dist
+          php examples/todos/artisan wayfinder:generate --with-form
       - run: pnpm check
       - run: pnpm --filter @laravel-zero/docs deploy:check
       - run: pnpm test:coverage
