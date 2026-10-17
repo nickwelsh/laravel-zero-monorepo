@@ -76,10 +76,11 @@ manage their own Zero peer dependency and its transitive dependencies.
 
 Run `pnpm audit` and `composer audit` in both Composer directories when reviewing
 updates. The npm audit also reports GHSA-vfj7-8cjw-p6xm in `braces` 3.0.3, which
-has no published fix. It affects deeply nested glob patterns in development
-lint tooling. This repository supplies checked-in glob patterns, without taking
-patterns from application users; monitor the upstream fix rather than hiding
-the advisory or replacing the glob engine with an incompatible package.
+has no published fix and no upstream fix planned. It affects deeply nested glob
+patterns in development lint tooling. This repository supplies checked-in glob
+patterns, without taking patterns from application users. This is an accepted
+development-tooling risk for that trusted input; reassess if glob patterns ever
+come from untrusted sources.
 
 ## Composer distribution
 
