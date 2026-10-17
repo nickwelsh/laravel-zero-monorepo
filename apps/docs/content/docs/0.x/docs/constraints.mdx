@@ -18,7 +18,10 @@ description: Understand the current v0.x database, relationship, and runtime lim
   JavaScript numeric precision applies to bigint/decimal data.
 - Eloquent scopes, accessors, encrypted casts, appended properties, and arbitrary
   PHP logic do not execute on replicated reads. Keep sensitive stored columns
-  excluded and express visibility using the Zero definition. Supported primitive casts are
+  outside the [resolved column allowlist](./models.mdx#columns-and-privacy) and
+  express row visibility using the Zero definition. Nonempty `$visible` restricts
+  database columns; it does not run accessors or export appended properties.
+  Required excluded columns fail generation. Supported primitive casts are
   hydrated, backed enums use literal unions, and DTO JSON shapes can use optional
   TypeScript module augmentation without requiring Laravel Data.
 - Server-only validation, normalization, defaults, timestamps, and model events

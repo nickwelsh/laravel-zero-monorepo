@@ -247,10 +247,15 @@ to override it, and `--check` in app CI to detect drift. Exclude the generated
 file from formatters so `--check` can compare its exact contents.
 
 The same column plan drives TypeScript and the dedicated PostgreSQL publication.
-Eloquent `$hidden` and `#[ZeroExclude(['secret'])]` are additive exclusions.
-`#[ZeroColumns([...])]` supplies an allowlist. `#[ZeroIncludeColumns([...])]`
-explicitly opts an otherwise hidden/excluded column back in. Required excluded
-keys, ownership fields, timestamps, or relationship keys cause generation to fail.
+Eloquent's nonempty `$visible` list is the default database-column allowlist;
+an empty list allows all database columns. `#[ZeroColumns([...])]` replaces that
+default with an explicit replication allowlist. `$hidden` and
+`#[ZeroExclude(['secret'])]` add exclusions to either allowlist.
+`#[ZeroIncludeColumns([...])]` explicitly opts a non-visible, hidden, or excluded
+column back in, but cannot add columns outside an explicit `ZeroColumns` list.
+Names in `$visible` that are not database columns (such as accessors or relations)
+are ignored. Required keys, ownership fields, timestamps, or relationship keys
+omitted by these controls cause generation to fail; they are never added silently.
 Pivot tables publish only correlation and primary-key columns. Use a dedicated
 publication; synchronization replaces its table/column membership atomically.
 

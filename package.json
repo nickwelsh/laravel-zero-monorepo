@@ -27,8 +27,9 @@
         "php:peck": "composer --working-dir=packages/laravel peck",
         "php:test:coverage": "composer --working-dir=packages/laravel test:coverage",
         "php:check": "composer --working-dir=packages/laravel check",
-        "check": "pnpm format:check && pnpm lint:check && pnpm typecheck && pnpm php:test && pnpm test && pnpm contracts:check && pnpm build && pnpm package:check",
-        "docs:generate": "pnpm --filter @laravel-zero/docs api:generate"
+        "check": "pnpm workflows:check && pnpm format:check && pnpm lint:check && pnpm typecheck && pnpm php:test && pnpm test && pnpm contracts:check && pnpm build && pnpm package:check",
+        "docs:generate": "pnpm --filter @laravel-zero/docs api:generate",
+        "workflows:check": "node --test scripts/check-workflows.test.mjs && node scripts/check-workflows.mjs"
     },
     "devDependencies": {
         "@dreamsicle.io/stylelint-config-tailwindcss": "^1.2.2",
@@ -51,7 +52,8 @@
         "ulid": "^3.0.0",
         "uuid": "^13.0.0",
         "vite": "npm:@voidzero-dev/vite-plus-core@1.2.0",
-        "vite-plus": "1.2.0"
+        "vite-plus": "1.2.0",
+        "yaml": "^2.9.1"
     },
     "engines": {
         "node": "^22.18.0 || >=24.11.0"
