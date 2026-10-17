@@ -76,5 +76,5 @@ which does not produce this static Cloudflare package, so use `deploy:check`.
 After setting the credentials locally, deploy the checked build with:
 
 ```sh
-pnpm --filter @laravel-zero/docs deploy
+pnpm --filter @laravel-zero/docs run deploy
 ```
