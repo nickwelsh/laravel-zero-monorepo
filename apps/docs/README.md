@@ -35,3 +35,46 @@ come from `meta.json`. The generated reference is mounted at
 `/laravel-zero` as the base path. Change those hosting values before deployment if
 needed. The Waku request-handler patch supplied by docs-base is registered in the
 root workspace config. The site uses the root pnpm version and lockfile.
+
+## Cloudflare Workers deployment
+
+The site is deployed as Workers Static Assets by the `Deploy docs` GitHub Actions
+workflow after CI succeeds on `main`. It can also be run manually on `main`.
+`cloudflare.config.ts` owns the `laravel-zero-docs` Worker and only the
+`docs.nickwelsh.me/laravel-zero` and `docs.nickwelsh.me/laravel-zero/*` routes.
+The existing proxied DNS record for `docs.nickwelsh.me` must remain in place.
+
+Create the GitHub environment `docs` and set:
+
+| Setting                 | Type                 | Value                                  |
+| ----------------------- | -------------------- | -------------------------------------- |
+| `CLOUDFLARE_API_TOKEN`  | Environment secret   | Cloudflare deployment token            |
+| `CLOUDFLARE_ACCOUNT_ID` | Environment variable | Account containing the Worker and zone |
+
+For the first deployment, set the token's Workers **default permissions to Admin**
+at the product scope: creating a Worker requires Admin and cannot be granted to a
+Worker that does not exist. Also grant **Zone / Workers Routes / Write** and
+**Zone / Zone / Read**, scoped to `nickwelsh.me`, so the CLI can resolve the zone
+and attach the routes. After creation, Workers access can be narrowed to
+**Editor** on `laravel-zero-docs`; retain route permissions while deployment
+manages the routes. No DNS editing permission or runtime secrets are needed.
+See [Cloudflare Workers roles](https://developers.cloudflare.com/workers/authorization/workers/).
+
+To validate locally without credentials:
+
+```sh
+pnpm docs:build
+pnpm --filter @laravel-zero/docs deploy:check
+pnpm --filter @laravel-zero/docs exec vite preview
+```
+
+The separate Vite build packages Waku's `dist/public` into Cloudflare Build Output
+without rebuilding the application. `cf deploy --prebuilt --mode production`
+deploys those exact assets. `cf build` detects Waku and runs its framework build,
+which does not produce this static Cloudflare package, so use `deploy:check`.
+
+After setting the credentials locally, deploy the checked build with:
+
+```sh
+pnpm --filter @laravel-zero/docs deploy
+```

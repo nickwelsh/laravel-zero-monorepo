@@ -14,6 +14,7 @@ minimumReleaseAgeExclude:
   - '@nickwelsh/refquill@0.1.0'
 allowBuilds:
   esbuild: true
+  workerd: true
   '@rocicorp/zero-sqlite3': true
   protobufjs: false
 # Vite+ wraps Vite with its own version while providing the Vite API Vitest expects.

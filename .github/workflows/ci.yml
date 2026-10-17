@@ -3,6 +3,7 @@ name: CI
 on:
   push:
   pull_request:
+  workflow_call:
 
 permissions:
   contents: read
@@ -57,6 +58,7 @@ jobs:
       - run: composer --working-dir=packages/laravel update --with 'laravel/framework:${{ matrix.laravel }}' --with 'orchestra/testbench:${{ matrix.testbench }}' --no-interaction --prefer-dist
       - run: pnpm install --frozen-lockfile
       - run: pnpm check
+      - run: pnpm --filter @laravel-zero/docs deploy:check
       - run: pnpm test:coverage
         if: matrix.php == '8.3' && matrix.laravel == '^13.0'
       - run: pnpm php:test:coverage

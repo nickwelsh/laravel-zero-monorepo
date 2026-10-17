@@ -9,7 +9,9 @@
         "build": "pnpm api:generate && docs-base build",
         "start": "docs-base start",
         "typecheck": "tsc --noEmit",
-        "check": "pnpm api:validate && pnpm typecheck"
+        "check": "pnpm api:validate && pnpm typecheck",
+        "deploy:check": "vite build && cf deploy --prebuilt --mode production --dry-run",
+        "deploy": "cf deploy --prebuilt --mode production"
     },
     "dependencies": {
         "@nickwelsh/docs-base": "^1.0.0",
@@ -22,8 +24,11 @@
         "waku": "1.0.0-rc.3"
     },
     "devDependencies": {
+        "@cloudflare/vite-plugin": "2.0.0-beta.v.1",
         "@nickwelsh/refquill": "0.1.0",
         "@types/node": "^22.20.5",
-        "typescript": "^6.0.2"
+        "cf": "1.0.0-beta.17",
+        "typescript": "^6.0.2",
+        "vite": "8.3.4"
     }
 }

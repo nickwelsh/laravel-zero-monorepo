@@ -10,5 +10,5 @@
         "resolveJsonModule": true,
         "types": ["node"]
     },
-    "include": ["waku.config.ts"]
+    "include": ["waku.config.ts", "cloudflare.config.ts", "vite.config.ts"]
 }
