@@ -11,6 +11,9 @@ import {
     type FilterControlProps,
 } from '@nickwelsh/zero-for-laravel/react';
 import type { ComponentType } from 'react';
+import { createFormbraid } from '@formbraid/react';
+
+const formbraid = createFormbraid({ fieldComponents: {}, formComponents: {} });
 
 // Compiled by typecheck; these are public-contract checks, not runtime tests.
 const fixtureDate = new Date('2026-01-01T00:00:00Z');
@@ -142,6 +145,21 @@ function useNestedContracts() {
     const { models } = nestedRuntime();
     const operation = models.Task.create().with('list').with('comments');
     const mutation = useMutation(operation);
+    const instance = formbraid.useForm(mutation.form);
+    instance.form.setFieldValue('list.name', 'List');
+    instance.form.setFieldValue('comments.0.body', 'Comment');
+    instance.form.setFieldValue('completed_at', '2026-10-19T12:00:00Z');
+    const component: 'TextField' = mutation.form.definition.fields['list.name'].component;
+    // @ts-expect-error Formbraid draft dates are strings, with native Dates restored on submission.
+    instance.form.setFieldValue('completed_at', fixtureDate);
+    // @ts-expect-error Formbraid retains nested writable value types.
+    instance.form.setFieldValue('comments.0.body', false);
+    // @ts-expect-error Generated form fields omit trusted linking keys.
+    mutation.form.definition.fields['comments.*.task_id'];
+    // @ts-expect-error Selected to-one relations expose their prefixed fields rather than a container field.
+    mutation.form.definition.fields.list;
+    // @ts-expect-error Generated IDs are not editable fields on create.
+    mutation.form.definition.fields.id;
     mutation({ title: 'Root', list: { name: 'List' }, comments: [{ body: 'Comment' }] });
     mutation.form.setValue('list.name', 'List');
     mutation.form.setValue('comments.0.body', 'Comment');

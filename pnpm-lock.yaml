@@ -5,6 +5,7 @@ settings:
   excludeLinksFromLockfile: false
 
 overrides:
+  '@formbraid/core': file:tests/fixtures/formbraid/formbraid-core-0.1.0.tgz
   '@rocicorp/zero>@opentelemetry/auto-instrumentations-node': 0.79.0
   '@opentelemetry/core@<2.8.0': 2.9.0
   '@opentelemetry/propagator-jaeger@<2.9.0': 2.9.0
@@ -25,6 +26,12 @@ importers:
       '@dreamsicle.io/stylelint-config-tailwindcss':
         specifier: ^1.2.2
         version: 1.2.2(stylelint@17.16.0(supports-color@10.2.2)(typescript@6.0.3))
+      '@formbraid/core':
+        specifier: file:tests/fixtures/formbraid/formbraid-core-0.1.0.tgz
+        version: file:tests/fixtures/formbraid/formbraid-core-0.1.0.tgz
+      '@formbraid/react':
+        specifier: file:tests/fixtures/formbraid/formbraid-react-0.1.0.tgz
+        version: file:tests/fixtures/formbraid/formbraid-react-0.1.0.tgz(react@19.3.1)
       '@rocicorp/zero':
         specifier: 1.10.0
         version: 1.10.0(@opentelemetry/core@2.9.0(@opentelemetry/api@1.9.1))(supports-color@10.2.2)
@@ -40,6 +47,9 @@ importers:
       '@vitest/coverage-v8':
         specifier: 5.0.4
         version: 5.0.4(@vitest/browser@5.0.4)(vitest@5.0.4)
+      effect:
+        specifier: 4.0.2
+        version: 4.0.2
       eslint-plugin-no-only-tests:
         specifier: ^3.4.0
         version: 3.4.0
@@ -286,6 +296,9 @@ importers:
 
   packages/client:
     dependencies:
+      '@formbraid/core':
+        specifier: file:../../tests/fixtures/formbraid/formbraid-core-0.1.0.tgz
+        version: file:tests/fixtures/formbraid/formbraid-core-0.1.0.tgz
       '@rocicorp/zero':
         specifier: 1.10.0
         version: 1.10.0(@opentelemetry/core@2.9.0(@opentelemetry/api@1.9.1))(supports-color@10.2.2)
@@ -837,6 +850,16 @@ packages:
 
   '@floating-ui/utils@0.2.12':
     resolution: {integrity: sha512-HpCo8tmWzLVad5s2d19EhAz5zqrrQ6s69qd6moPMQvkOuSwDT1YgRfWSVuc4ennqrgv3OHppiOGMQ7oC13yIww==}
+
+  '@formbraid/core@file:tests/fixtures/formbraid/formbraid-core-0.1.0.tgz':
+    resolution: {integrity: sha512-g3Kp3bmvQnz0kmMLKydk06LFq3d/n1AeC28v6LyacV3LidRVjSGw8wATTOgsf/YkiRTsSEzU3lccoq4IU2PXwQ==, tarball: file:tests/fixtures/formbraid/formbraid-core-0.1.0.tgz}
+    version: 0.1.0
+
+  '@formbraid/react@file:tests/fixtures/formbraid/formbraid-react-0.1.0.tgz':
+    resolution: {integrity: sha512-HyLXhDm5gv/ambKkd9pMnABWE2ApcJXniaW2RkewRzcj5T3GtBa9yXWR7rY86SADehJSiqMsc5lAffqolVoSqg==, tarball: file:tests/fixtures/formbraid/formbraid-react-0.1.0.tgz}
+    version: 0.1.0
+    peerDependencies:
+      react: ^19.0.0
 
   '@fuma-translate/react@1.0.2':
     resolution: {integrity: sha512-uOiOtBx3nRXR8Nu1GzBf1tApgF1FErDBTHxRIAQeyQdyOoZbrNRN6H4kDCWObY4qyGeGbHydG0DHzgeUgFDMIw==}
@@ -4656,6 +4679,9 @@ packages:
   eastasianwidth@0.2.0:
     resolution: {integrity: sha512-I88TYZWc9XiYHRQ4/3c5rjjfgkjhLyW2luGIheGERbNQ6OY7yTybanSpDXZa8y7VUP9YmDcYa+eyq4ca7iLqWA==}
 
+  effect@4.0.2:
+    resolution: {integrity: sha512-YeYnLqSFrL4+tCOXRrfNP03w8FILoF/wDl+ukraJAGzXrjcS383W7LAAvGBbLatEyktmLxRq+9xJinx7QzXW5A==}
+
   electron-to-chromium@1.5.451:
     resolution: {integrity: sha512-vUNKPrUzw8ByEMOxloq0a71iD/mPuPxVkbDm3G5YhnxTzOw/I6qAg2MUS0cYj/c267lWmw26yW4Vv7foxTxPLg==}
 
@@ -8206,6 +8232,16 @@ snapshots:
       react-dom: 19.3.1(react@19.3.1)
 
   '@floating-ui/utils@0.2.12': {}
+
+  '@formbraid/core@file:tests/fixtures/formbraid/formbraid-core-0.1.0.tgz':
+    dependencies:
+      effect: 4.0.2
+
+  '@formbraid/react@file:tests/fixtures/formbraid/formbraid-react-0.1.0.tgz(react@19.3.1)':
+    dependencies:
+      '@formbraid/core': file:tests/fixtures/formbraid/formbraid-core-0.1.0.tgz
+      effect: 4.0.2
+      react: 19.3.1
 
   '@fuma-translate/react@1.0.2(@types/react@19.3.0)(react-dom@19.3.1(react@19.3.1))(react@19.3.1)':
     dependencies:
@@ -11923,6 +11959,8 @@ snapshots:
       stream-shift: 1.0.3
 
   eastasianwidth@0.2.0: {}
+
+  effect@4.0.2: {}
 
   electron-to-chromium@1.5.451: {}
 

@@ -29,6 +29,21 @@ Use these hooks inside Zero's `ZeroProvider`. The root export is framework
 independent; `/react` adds React hooks, filter controls, and the native provider.
 Laravel generates the schema and allowed operations from your model definitions.
 
+`useMutation` also returns a Formbraid descriptor. Pass it to your application's
+registered `Form`; selected relations add prefixed fields and share one mutation:
+
+```tsx
+const { form } = useMutation(Party.create().with('person'));
+return <Form form={form} />;
+```
+
+Formbraid owns edits and submission. The callback restores date strings to Dates,
+waits for server acceptance, and maps field errors. The client has a
+type-only `@formbraid/core` peer required by its public TypeScript declarations;
+use Formbraid's current source descriptor
+contract until that version is published. Collections require an application
+array component; see the mutations guide for component names and defaults.
+
 See the [installation guide and API examples](https://github.com/nickwelsh/zero-for-laravel-monorepo#readme)
 for model attributes, policies, publication setup, authenticated endpoints,
 client lifetime, and supported constraints.

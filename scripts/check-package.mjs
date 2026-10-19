@@ -14,6 +14,9 @@ registerHooks({
         if (specifier === 'react' || specifier.startsWith('react/')) {
             throw new Error('The core package must load without React.');
         }
+        if (specifier.startsWith('@formbraid/')) {
+            throw new Error('Formbraid must remain a type-only dependency.');
+        }
         return nextResolve(specifier, context);
     },
 });

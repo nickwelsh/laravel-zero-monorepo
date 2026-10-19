@@ -55,7 +55,60 @@ Primary keys, server fills, and lifecycle timestamps cannot be patched.
 Writes use Eloquent events and authoritative server timestamps; cancelled events
 and validation/policy failures become durable application errors.
 
-## Bound forms
+## Formbraid forms
+
+`useMutation` supplies Formbraid's public version-1 `FormDescriptor`. Register
+your application components with `createFormbraid` and pass the descriptor to
+its `Form`:
+
+```tsx
+import { Form } from '@/forms';
+import { useMutation } from '@nickwelsh/zero-for-laravel/react';
+
+const { form } = useMutation(task.update());
+return <Form key={task.data.id} form={form} />;
+```
+
+The descriptor pairs `definition`, writable `defaultValues`, and
+`submission.submit`. Formbraid owns editable values, validation, field errors,
+and submission state. Its callback prepares the existing mutation and reports
+success after Zero's server acknowledgement. Field validation errors return
+`invalid`; authorization and transport errors return `failure`. Cancelling
+stops observing the result; an already-enqueued durable mutation can still commit.
+
+Definitions infer labels, types, nullability, enum options, required fields,
+and portable size constraints from the generated model contracts. They exclude
+server fills, lifecycle fields, generated IDs, and derived relationship keys.
+The default registry component names are:
+
+| Value                    | Component       |
+| ------------------------ | --------------- |
+| String                   | `TextField`     |
+| Number / integer         | `NumberField`   |
+| Boolean                  | `CheckboxField` |
+| Date                     | `DateField`     |
+| Enum                     | `SelectField`   |
+| Array / to-many relation | `ArrayField`    |
+| Object / untyped JSON    | `ObjectField`   |
+
+Register the components used by your model. JSON columns default to object
+fields unless cast as arrays; customize the returned definition when your
+application uses another JSON shape or component. Definitions are plain data,
+so application-specific labels, props, components, and layouts can be supplied
+with a new definition object.
+
+Date fields edit strings and initialize from stored dates as ISO strings; the
+callback restores native `Date` values before preparing the mutation. Direct
+mutation calls still accept `Date`. Nullable blank date strings submit as null.
+Bound update forms preserve patch semantics for parent and related records.
+Use Formbraid's `useForm(form)` to edit values or reset, and a React `key` when
+switching records. Formbraid defaults initialize a mount and do not reset edits
+on rerender. Formbraid requires the descriptor contract currently on its main
+branch; its npm staging placeholders do not include that runtime. See the
+[pinned development fixtures](https://github.com/nickwelsh/zero-for-laravel-monorepo/tree/main/tests/fixtures/formbraid)
+for the tested revision and source build instructions.
+
+## Manual bound forms
 
 ```tsx
 const { form, submit, defaultValues, state } = useMutation(task.update());
@@ -68,12 +121,14 @@ return (
 );
 ```
 
-The form exposes values, field errors, and column/writable-field metadata. It does
+The existing manual form API exposes values, field errors, and column/writable-field metadata. It does
 not prescribe a component library. Bound updates start with writable defaults
 and submit edited fields plus any fields explicitly required by the update rules. `useMutation(task.destroy()).submit()` needs no ID.
 The callable API remains available (`update({ title: 'Changed' })`), as do static
 operations with explicit IDs. Bound IDs cannot be overridden. Reset restores defaults;
-switching record or Zero identity clears form state and ignores old mutation outcomes.
+switching record or Zero identity clears manual form state and ignores old mutation outcomes.
+These controls remain available for existing applications. For Formbraid forms,
+edit and reset through Formbraid's session APIs.
 
 Policies decide whether a user may perform an operation on the original record.
 An update FormRequest can then restrict which fields they may submit:

@@ -27,7 +27,7 @@ attributes. Configure their `mutationRequests()` normally even when their
 operations are only reachable through a parent. Nested creation requires the same
 UUID/ULID key generation as standalone creation.
 
-### Authorization
+## Authorization
 
 By default, Laravel checks the parent policy for the root action and the child's
 own policy for its nested action. Creating a Party with a Person checks
@@ -76,23 +76,30 @@ prepared ID and trusted context fills. Policies must account for that. For
 `hasOne`/`hasMany`, the parent is already saved within the transaction. Generated
 contracts contain allowed operations, not policy implementations or decisions.
 
-### Client and forms
+## Client and forms
 
 ```tsx
-const { form, submit } = useMutation(Party.create().with('person'));
+import { Form } from '@/forms'; // Your createFormbraid registry.
 
-form.setValue('name', 'Birthday');
-form.setValue('person.first_name', 'Nick');
-
-return <Form form={form} onSubmit={submit} />;
+const { form } = useMutation(Party.create().with('person'));
+return <Form form={form} />;
 ```
 
-`form.fields` and `form.columns` include prefixed paths such as
+`form` is a Formbraid version-1 descriptor with a generated definition and a
+submission callback. `form.definition.fields`, `form.fields`, and `form.columns` include prefixed paths such as
 `person.first_name`; collections use templates such as `people.*.first_name`.
-Set collection values through concrete paths like `people.0.first_name` or set
-the relation's whole array. Values are nested objects, and errors use the same
+Formbraid renders the selected person's fields alongside the party fields and
+owns editing and submission. No separate `onSubmit` callback is needed.
+Use its `useForm(form)` for programmatic access, including concrete paths like
+`people.0.first_name`. Values are nested objects, and errors use the same
 concrete dot paths. Relation keys supplied by the executor are excluded from
 writable form fields and generated mutation input types.
+
+Collections add an `ArrayField` container with wildcard child metadata. Supply
+an application-owned array component/layout to add and render rows; Formbraid
+does not generate repeaters. A selected to-one create starts with its writable
+defaults; a selected collection starts empty. Bound nested updates hydrate the
+included records and carry their IDs in the defaults.
 
 Direct submission uses the same nested shape:
 
@@ -119,7 +126,7 @@ the server. Included snapshots supply defaults for bound nested updates. Bound
 update forms submit changed fields plus fields explicitly required by each
 model's update rules, preserving child IDs.
 
-### Execution guarantees and limits
+## Execution guarantees and limits
 
 One invocation is one native Zero transaction and one Laravel database
 transaction. IDs and optimistic timestamps are prepared once before enqueueing.

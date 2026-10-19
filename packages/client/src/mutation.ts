@@ -10,6 +10,7 @@ import {
     type MutatorDefinition,
     type AnyMutatorRegistry,
 } from '@rocicorp/zero';
+import { mutationForm, type MutationDefinition } from './form';
 import { ulid } from 'ulid';
 import { v7 as uuidv7 } from 'uuid';
 import type {
@@ -21,7 +22,6 @@ import type {
     RecordId,
     RelatedName,
     Relation,
-    Column,
 } from './contract';
 import {
     columnValue,
@@ -423,7 +423,7 @@ export class Mutation<
             readonly operation: Operation;
             readonly nested: NestedSelections;
         },
-    ): Mutation<S, D, N, O, Bound, unknown> {
+    ): unknown {
         const allowed =
             this.operation === 'create' || this.operation === 'update'
                 ? this.contract.nestedMutations?.[this.operation]?.[name]
@@ -439,41 +439,16 @@ export class Mutation<
             [name]: { operation, relations: selected.nested },
         });
     }
-    get form(): { columns: Readonly<Record<string, Column>>; fields: readonly string[] } {
-        const fields: string[] = [],
-            columns: Record<string, Column> = { ...this.contract.columns };
-        const visit = (
-            model: ModelContract,
-            operation: Operation,
-            nested: NestedSelections,
-            prefix: string,
-            excluded: string[] = [],
-            depth = 0,
-        ) => {
-            if (depth > 8) fail('relations', 'Nested mutations exceed the maximum depth.');
-            const ownBindings = Object.entries(nested).flatMap(([name]) =>
-                model.relations[name]?.kind === 'belongsTo' ? [...model.relations[name].path[0]!.source] : [],
-            );
-            for (const field of operation === 'create' || operation === 'update' ? model.writable : []) {
-                if (excluded.includes(field) || ownBindings.includes(field)) continue;
-                fields.push(prefix + field);
-                columns[prefix + field] = model.columns[field]!;
-            }
-            for (const [name, spec] of Object.entries(nested)) {
-                const relation = model.relations[name]!;
-                const childPrefix = `${prefix}${name}.${relation.cardinality === 'many' ? '*.' : ''}`;
-                visit(
-                    this.definitions[relation.model]!,
-                    spec.operation,
-                    spec.relations,
-                    childPrefix,
-                    relation.kind === 'belongsTo' ? [] : [...relation.path[0]!.dest],
-                    depth + 1,
-                );
-            }
-        };
-        visit(this.contract, this.operation, this.nested, '');
-        return { columns, fields };
+    get form() {
+        const form = mutationForm(
+            this.definitions,
+            this.contract,
+            this.operation,
+            this.nested,
+            this.record !== undefined,
+            this.defaultValues,
+        );
+        return { ...form, definition: form.definition as MutationDefinition<D, N, Input> };
     }
 
     /** Preserve patch semantics at every level of a bound update form. */

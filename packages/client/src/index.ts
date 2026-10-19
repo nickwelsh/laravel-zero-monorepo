@@ -4,6 +4,7 @@ export { Selection } from './query';
 export type { SelectionData, NativeQueries } from './query';
 export { Mutation } from './mutation';
 export type { MutationArgs, ClientDefaults, NativeMutators } from './mutation';
+export type { MutationDraft, MutationDefinition, MutationFields } from './form';
 export { InputError } from './validation';
 export type {
     Column,

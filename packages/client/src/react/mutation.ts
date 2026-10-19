@@ -4,6 +4,8 @@ import { useEffect, useRef, useState } from 'react';
 import type { ClientContext, ContractMap, Operation, RecordId } from '../contract';
 import type { Mutation, OperationInput } from '../mutation';
 import { InputError } from '../validation';
+import { mutationFormInput, type MutationDraft } from '../form';
+import type { CallbackSubmission, FormDescriptor, SubmissionResult } from '@formbraid/core';
 
 export type MutationState = {
     status: 'idle' | 'pending' | 'success' | 'failure';
@@ -21,7 +23,15 @@ export type MutationCallback<
     Input = OperationInput<D, N, O, Bound>,
 > = ((input: Input) => MutationCall<RecordId<D, N>>) & {
     readonly state: MutationState;
-    readonly form: Mutation<S, D, N, O, Bound, Input>['form'] & MutationForm<Input>;
+    readonly form: Mutation<S, D, N, O, Bound, Input>['form'] &
+        MutationForm<Input> &
+        FormDescriptor<
+            MutationDraft<Input> & object,
+            Mutation<S, D, N, O, Bound, Input>['form']['definition']['fields'],
+            Record<string, never>
+        > & {
+            readonly submission: CallbackSubmission<MutationDraft<Input> & object>;
+        };
     readonly defaultValues: Partial<Input>;
     submit(event?: { preventDefault(): void }): MutationCall<RecordId<D, N>>;
     reset(): void;
@@ -77,6 +87,35 @@ function fields(value: unknown): Readonly<Record<string, readonly string[]>> {
     );
 }
 
+function formOutcome(outcome: MutatorResultDetails): SubmissionResult {
+    if (outcome.type === 'success') return { status: 'success' };
+    const errors = outcome.error.type === 'app' ? fields(outcome.error.details) : {};
+    return Object.keys(errors).length > 0
+        ? { status: 'invalid', errors }
+        : { status: 'failure', error: new Error(outcome.error.message) };
+}
+
+/** Stop observing a durable mutation on cancellation; it may still commit. */
+async function formCompletion(call: MutationCall, signal: AbortSignal): Promise<SubmissionResult> {
+    if (signal.aborted) return { status: 'cancelled' };
+    let abort!: () => void;
+    const cancelled = new Promise<SubmissionResult>((resolve) => {
+        abort = () => resolve({ status: 'cancelled' });
+        signal.addEventListener('abort', abort, { once: true });
+    });
+    // A client rejection/failure can settle without a server acknowledgement.
+    const clientFailure = call.client.then((outcome) =>
+        outcome.type === 'error' ? formOutcome(outcome) : new Promise<SubmissionResult>(() => {}),
+    );
+    try {
+        return await Promise.race([call.server.then(formOutcome), clientFailure, cancelled]);
+    } catch (error) {
+        return { status: 'failure', error };
+    } finally {
+        signal.removeEventListener('abort', abort);
+    }
+}
+
 export function useMutation<
     S extends Schema,
     D extends ContractMap,
@@ -86,6 +125,7 @@ export function useMutation<
     Input = OperationInput<D, N, O, Bound>,
 >(operation: Mutation<S, D, N, O, Bound, Input>): MutationCallback<S, D, N, O, Bound, Input> {
     const zero = useZero<S, undefined, ClientContext>();
+    const form = operation.form;
     const key = JSON.stringify([
         operation.name,
         operation.operation,
@@ -98,11 +138,18 @@ export function useMutation<
         key,
         defaults: operation.defaultValues,
         values: operation.defaultValues,
+        draftDefaults: form.definition.defaultValues,
     }));
     const currentForm =
         formState.zero === zero && formState.key === key
             ? formState
-            : { zero, key, defaults: operation.defaultValues, values: operation.defaultValues };
+            : {
+                  zero,
+                  key,
+                  defaults: operation.defaultValues,
+                  values: operation.defaultValues,
+                  draftDefaults: form.definition.defaultValues,
+              };
     if (currentForm !== formState) setFormState(currentForm);
     const active = useRef({ zero, key, version: 0, mounted: true });
     useEffect(() => {
@@ -214,7 +261,32 @@ export function useMutation<
         state: currentState,
         defaultValues: currentForm.defaults,
         form: {
-            ...operation.form,
+            ...form,
+            definition: { ...form.definition, defaultValues: currentForm.draftDefaults },
+            version: 1 as const,
+            defaultValues: currentForm.draftDefaults,
+            submission: {
+                submit: async (
+                    values: MutationDraft<Input> & object,
+                    { signal }: { signal: AbortSignal },
+                ): Promise<SubmissionResult> => {
+                    if (signal.aborted) return { status: 'cancelled' };
+                    try {
+                        const patch = operation.formValues(values, currentForm.draftDefaults);
+                        const input = mutationFormInput(
+                            operation.definitions,
+                            operation.contract,
+                            operation.nested,
+                            patch,
+                        );
+                        return await formCompletion(callback(input as Input), signal);
+                    } catch (error) {
+                        return error instanceof InputError
+                            ? { status: 'invalid', errors: error.fields }
+                            : { status: 'failure', error };
+                    }
+                },
+            },
             values: currentForm.values,
             errors: currentState.fields,
             setValue: <P extends FormPath<Input>>(field: P, value: FormValue<Input, P>) =>
@@ -241,7 +313,13 @@ export function useMutation<
         reset: () => {
             active.current.version++;
             setSnapshot({ zero, key, state: idle });
-            setFormState({ zero, key, defaults: operation.defaultValues, values: operation.defaultValues });
+            setFormState({
+                zero,
+                key,
+                defaults: operation.defaultValues,
+                values: operation.defaultValues,
+                draftDefaults: form.definition.defaultValues,
+            });
         },
     });
 }

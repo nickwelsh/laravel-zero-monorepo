@@ -384,11 +384,17 @@ while editing. Initial values/options belong to the mounted filter binding.
 The basic date control edits UTC; use a custom control for local-calendar semantics.
 
 Mutations return native `client` and `server` completion promises plus the stable
-record `id`. `state` reports pending/success/failure and field errors; `form`
-contains columns/writable fields, editable `values`, `setValue()`, and field `errors`.
-`submit()` submits form values, `defaultValues` provides writable defaults, and
-`reset()` resets form and mutation state. Bound update forms submit changed fields plus fields explicitly required by update rules. Handle both
-synchronous `InputError` from preparation and asynchronous mutation outcomes.
+record `id`. `state` reports pending/success/failure and field errors. `form` is
+also a Formbraid descriptor: pass it to your registered `<Form form={form} />`.
+It includes writable field definitions, defaults, and a callback that waits for
+server acceptance and maps field errors. Selecting `.with('person')` adds fields
+such as `person.first_name`. Formbraid owns editing and submission, and date
+fields edit strings that the callback converts to native Dates.
+
+The existing manual controls (`form.values`, `form.setValue()`, `form.errors`,
+`submit()`, and `reset()`) remain available. Bound update forms submit changed
+fields plus fields explicitly required by update rules. Handle both synchronous
+`InputError` from direct preparation and asynchronous mutation outcomes.
 
 ```ts
 const update = useMutation(task.update());
