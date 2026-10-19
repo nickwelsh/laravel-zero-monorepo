@@ -5,7 +5,6 @@ settings:
   excludeLinksFromLockfile: false
 
 overrides:
-  '@formbraid/core': file:tests/fixtures/formbraid/formbraid-core-0.1.0.tgz
   '@rocicorp/zero>@opentelemetry/auto-instrumentations-node': 0.79.0
   '@opentelemetry/core@<2.8.0': 2.9.0
   '@opentelemetry/propagator-jaeger@<2.9.0': 2.9.0
@@ -27,11 +26,11 @@ importers:
         specifier: ^1.2.2
         version: 1.2.2(stylelint@17.16.0(supports-color@10.2.2)(typescript@6.0.3))
       '@formbraid/core':
-        specifier: file:tests/fixtures/formbraid/formbraid-core-0.1.0.tgz
-        version: file:tests/fixtures/formbraid/formbraid-core-0.1.0.tgz
+        specifier: 0.1.0
+        version: 0.1.0
       '@formbraid/react':
-        specifier: file:tests/fixtures/formbraid/formbraid-react-0.1.0.tgz
-        version: file:tests/fixtures/formbraid/formbraid-react-0.1.0.tgz(react@19.3.1)
+        specifier: 0.1.0
+        version: 0.1.0(react@19.3.1)
       '@rocicorp/zero':
         specifier: 1.10.0
         version: 1.10.0(@opentelemetry/core@2.9.0(@opentelemetry/api@1.9.1))(supports-color@10.2.2)
@@ -297,8 +296,8 @@ importers:
   packages/client:
     dependencies:
       '@formbraid/core':
-        specifier: file:../../tests/fixtures/formbraid/formbraid-core-0.1.0.tgz
-        version: file:tests/fixtures/formbraid/formbraid-core-0.1.0.tgz
+        specifier: ^0.1.0
+        version: 0.1.0
       '@rocicorp/zero':
         specifier: 1.10.0
         version: 1.10.0(@opentelemetry/core@2.9.0(@opentelemetry/api@1.9.1))(supports-color@10.2.2)
@@ -851,15 +850,17 @@ packages:
   '@floating-ui/utils@0.2.12':
     resolution: {integrity: sha512-HpCo8tmWzLVad5s2d19EhAz5zqrrQ6s69qd6moPMQvkOuSwDT1YgRfWSVuc4ennqrgv3OHppiOGMQ7oC13yIww==}
 
-  '@formbraid/core@file:tests/fixtures/formbraid/formbraid-core-0.1.0.tgz':
-    resolution: {integrity: sha512-g3Kp3bmvQnz0kmMLKydk06LFq3d/n1AeC28v6LyacV3LidRVjSGw8wATTOgsf/YkiRTsSEzU3lccoq4IU2PXwQ==, tarball: file:tests/fixtures/formbraid/formbraid-core-0.1.0.tgz}
-    version: 0.1.0
+  '@formbraid/core@0.1.0':
+    resolution: {integrity: sha512-YuKz8wWe5KYw+Kwj1xKQe3lAVczUeg+Thrql4zsnUUTj9hi1UcTQgJrX3/P4g3DxlbKSEHYnvYDcbAgZVzoPWQ==}
 
-  '@formbraid/react@file:tests/fixtures/formbraid/formbraid-react-0.1.0.tgz':
-    resolution: {integrity: sha512-HyLXhDm5gv/ambKkd9pMnABWE2ApcJXniaW2RkewRzcj5T3GtBa9yXWR7rY86SADehJSiqMsc5lAffqolVoSqg==, tarball: file:tests/fixtures/formbraid/formbraid-react-0.1.0.tgz}
-    version: 0.1.0
+  '@formbraid/react@0.1.0':
+    resolution: {integrity: sha512-D0LUlCOgCNtwNkcKmxaRA2Eg5p8vwY60+vkx4sPhfBkjRq9VKzAsi4d4tWTZEU3hnXD9999jJBaT69tUadnPUQ==}
     peerDependencies:
+      '@formbraid/generator': ^0.1.0
       react: ^19.0.0
+    peerDependenciesMeta:
+      '@formbraid/generator':
+        optional: true
 
   '@fuma-translate/react@1.0.2':
     resolution: {integrity: sha512-uOiOtBx3nRXR8Nu1GzBf1tApgF1FErDBTHxRIAQeyQdyOoZbrNRN6H4kDCWObY4qyGeGbHydG0DHzgeUgFDMIw==}
@@ -8233,13 +8234,13 @@ snapshots:
 
   '@floating-ui/utils@0.2.12': {}
 
-  '@formbraid/core@file:tests/fixtures/formbraid/formbraid-core-0.1.0.tgz':
+  '@formbraid/core@0.1.0':
     dependencies:
       effect: 4.0.2
 
-  '@formbraid/react@file:tests/fixtures/formbraid/formbraid-react-0.1.0.tgz(react@19.3.1)':
+  '@formbraid/react@0.1.0(react@19.3.1)':
     dependencies:
-      '@formbraid/core': file:tests/fixtures/formbraid/formbraid-core-0.1.0.tgz
+      '@formbraid/core': 0.1.0
       effect: 4.0.2
       react: 19.3.1
 

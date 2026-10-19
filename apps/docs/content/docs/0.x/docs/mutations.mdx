@@ -103,10 +103,11 @@ mutation calls still accept `Date`. Nullable blank date strings submit as null.
 Bound update forms preserve patch semantics for parent and related records.
 Use Formbraid's `useForm(form)` to edit values or reset, and a React `key` when
 switching records. Formbraid defaults initialize a mount and do not reset edits
-on rerender. Formbraid requires the descriptor contract currently on its main
-branch; its npm staging placeholders do not include that runtime. See the
-[pinned development fixtures](https://github.com/nickwelsh/zero-for-laravel-monorepo/tree/main/tests/fixtures/formbraid)
-for the tested revision and source build instructions.
+on rerender. Install the published Formbraid 0.1 runtime packages:
+
+```sh
+pnpm add @formbraid/core@^0.1.0 @formbraid/react@^0.1.0
+```
 
 ## Manual bound forms
 

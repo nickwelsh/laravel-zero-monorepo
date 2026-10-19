@@ -4,7 +4,7 @@ Typed model queries, automatic optimistic CRUD, and React bindings for Zero for 
 Requires the matching `nickwelsh/zero-for-laravel` Composer package and
 `@rocicorp/zero` **1.10.0**. React 18/19 is an optional peer dependency.
 
-Install the current stable release, **v0.1.0**, in your Laravel application:
+Install the current stable release, **v0.2.0**, in your Laravel application:
 
 ```sh
 composer require nickwelsh/zero-for-laravel
@@ -40,9 +40,9 @@ return <Form form={form} />;
 Formbraid owns edits and submission. The callback restores date strings to Dates,
 waits for server acceptance, and maps field errors. The client has a
 type-only `@formbraid/core` peer required by its public TypeScript declarations;
-use Formbraid's current source descriptor
-contract until that version is published. Collections require an application
-array component; see the mutations guide for component names and defaults.
+install `@formbraid/core@^0.1.0` and `@formbraid/react@^0.1.0` for the form runtime.
+Collections require an application array component; see the mutations guide for
+component names and defaults.
 
 See the [installation guide and API examples](https://github.com/nickwelsh/zero-for-laravel-monorepo#readme)
 for model attributes, policies, publication setup, authenticated endpoints,
