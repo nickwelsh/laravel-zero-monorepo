@@ -4,7 +4,7 @@ Typed model queries, automatic optimistic CRUD, and React bindings for Zero for 
 Requires the matching `nickwelsh/zero-for-laravel` Composer package and
 `@rocicorp/zero` **1.10.0**. React 18/19 is an optional peer dependency.
 
-Install the current stable release, **v0.2.0**, in your Laravel application:
+Install the current stable release, **v0.2.1**, in your Laravel application:
 
 ```sh
 composer require nickwelsh/zero-for-laravel
