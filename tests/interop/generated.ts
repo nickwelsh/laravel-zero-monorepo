@@ -38,7 +38,7 @@ const table4Relations = relationships(table4, ({one, many}) => ({
   "tags": many({sourceField: ["id"], destField: ["task_id"], destSchema: table3}, {sourceField: ["tag_id"], destField: ["id"], destSchema: table2}),
   "comments": many({sourceField: ["id"], destField: ["task_id"], destSchema: table0}),
 }));
-const table1Relations = relationships(table1, ({one, many}) => ({
+const table1Relations = relationships(table1, ({many}) => ({
   "tasks": many({sourceField: ["id"], destField: ["list_id"], destSchema: table4}),
 }));
 export const schema = createSchema({tables: [table0, table1, table2, table3, table4], relationships: [table4Relations, table1Relations], enableLegacyQueries: false, enableLegacyMutators: false});
